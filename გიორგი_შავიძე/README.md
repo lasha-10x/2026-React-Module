@@ -1,0 +1,36 @@
+# 10X Shop — E-Commerce SPA
+
+10X Shop is a modern, fast, and fully responsive e-commerce Single Page Application (SPA) built with React 18, TypeScript, Tailwind CSS v4, and React Router DOM v6. It fetches data dynamically from the [DummyJSON API](https://dummyjson.com/) and provides an advanced shopping experience with live stock management and order tracking.
+
+## 🚀 Key Features
+
+- **Interactive Catalog:** Category filtering, dynamic pagination, and URL query state retention (`useSearchParams`).
+- **AliExpress-Style Image Carousel:** Mouse-move hover image preview with active dot indicators on product cards.
+- **Dynamic Stock Management:** Real-time inventory deduction saved in `localStorage` upon checkout, preventing over-purchasing.
+- **Shopping Cart:** Persistent cart state with price calculations, item count badges, and quantity control.
+- **Validated Checkout & Auth:** Login and checkout form validations enforcing formatted input (email/name, address, postal codes).
+- **Order History & Delivery Simulation:** Real-time order lifecycle tracking (Processing ⏳ -> Shipped 🚚 -> Delivered ✅).
+- **Product Reviews:** Customers can submit star ratings and comments on delivered orders, which dynamically update product details.
+- **Demo Reset Utility:** One-click reset to wipe local demo storage and restore initial catalog state.
+
+## 🛠️ Tech Stack
+
+- **Frontend:** React 18, TypeScript (Strict Mode)
+- **Styling:** Tailwind CSS v4
+- **Routing:** React Router DOM v6
+- **State & Data:** React Context API, `localStorage` Persistence, DummyJSON API
+- **Build Tool:** Vite
+
+## 📦 Getting Started
+
+### Prerequisites
+
+Make sure you have **Node.js** (v18 or higher) installed.
+
+### Installation
+
+1. Clone the repository:
+   ```bash
+   git clone <repository-url>
+   cd 10x-shop
+   ```

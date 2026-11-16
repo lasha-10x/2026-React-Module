@@ -1,0 +1,19 @@
+# 10X Shop
+
+> 10X Shop is a demo online store built with React, TypeScript and Tailwind CSS as a graduation project. Product data comes from the public DummyJSON API; login, payment and orders are simulated in the browser.
+
+## Pages
+
+- [Catalog](https://10x-shop-gurami.netlify.app/): browse, search, filter and sort products
+- [Wishlist](https://10x-shop-gurami.netlify.app/wishlist): products saved by the visitor
+- [Compare](https://10x-shop-gurami.netlify.app/compare): side-by-side product comparison
+- [Cart](https://10x-shop-gurami.netlify.app/cart): cart, promo code and delivery methods
+
+## Product pages
+
+Each product has its own address built from its name, for example `https://10x-shop-gurami.netlify.app/products/essence-mascara-lash-princess`.
+
+## Optional
+
+- [Source code](https://github.com/GuramAbramishvili/10x-shop-gurami)
+- [Product data (DummyJSON)](https://dummyjson.com)

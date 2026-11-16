@@ -1,0 +1,149 @@
+# AI usage log: 10X Shop
+
+How AI was used on this project. Tool: **Claude Code (Opus 5.5)**, in the VS Code extension.
+
+Prompts are quoted word for word, as they were written. The PRD allows AI at any stage. It also says
+three things remain my responsibility: the product must work, I must be able to explain it, and the
+process must be mine.
+
+---
+
+## Entry 1: reading the brief and asking questions
+
+**Goal:** understand both documents before building anything.
+
+**Prompt (verbatim):**
+> "E:\zagruzki blia\10X-Shop-Graduation-Project-PRD.docx" "E:\zagruzki blia\დანართი A.docx" analyze these documents fully, this is a graduation project, first off all study all the requirements, tell them to me in a short understandable manner, before building anything, ask questions related to this project, more questions the better, we also need do decide on decide on design and branding for it, maybe some fun features.
+
+**Result:** used. It listed the requirements and found contradictions in the documents, such as the password rule and leftover checkout rows. It also found technical traps, such as the newest TypeScript being outside the range the required linter supports.
+
+**Correction:** the AI first told me Checkout stays at four fields. On a second reading it found that FULL adds Phone, Postal code and Country, and it corrected itself. I chose to add them.
+
+---
+
+## Entry 2: design and brand decisions
+
+The AI proposed four concepts and made recommendations. These decisions were mine.
+
+| Decision | AI recommended | I chose |
+|---|---|---|
+| Concept | Night Vending | Night Vending |
+| Setting | Tbilisi at night | **Tokyo at night** |
+| Background | Quiet glow, for performance | **Light rain** |
+| Scope | CORE + all FULL | **FULL + BONUS, plus all eight extras** |
+
+---
+
+## Entry 3: how the code gets explained
+
+**Prompt (verbatim), when asked how comfortable I am with React and TypeScript:**
+> basically what we can do is every code that's written get's a written note explaining it, put the notes right in the codebase, keep explanations simple yet in depth
+
+**Result:** every file has a header note, and every component, function, hook, effect and piece of state has a note above it, saying what it does, why it's done that way and what breaks without it.
+
+---
+
+## Entry 4: working through the night
+
+**Prompt (verbatim):**
+> i'll be up all night, so just keep working, and guide me step by step on every thing i need to do by hand
+
+**Result:** the AI kept building and told me each step it couldn't do for me, with the exact clicks.
+
+---
+
+## Entry 5: what I decided after seeing the design
+
+**Prompt (verbatim):**
+> gh auth is done, design looks very good, continue, what else has to be done by hand by me?
+
+**Result:** the pink buttons and the side panel stayed, as designed.
+
+---
+
+## Entry 6: the demo video and the deployment
+
+**Prompt (verbatim):**
+> the video we can definitely do with the brag skills, give me a step by step guide on deploying to vercel, and other things i need to do by hand. continue
+
+**Result:** a step-by-step Vercel guide. The AI pointed out that the PRD asks for a screen recording, so the video starts from a real recording of the live site, with polish added around it.
+
+---
+
+## Entry 7: code review, and what was rejected
+
+The AI ran a code review on its own work twice during the FULL stage. Each finding started as a claim from reading the code, so it first had to fail in a browser test before anything changed.
+
+| Review finding | Outcome |
+|---|---|
+| A failed order saves twice on retry | Real. Reproduced and fixed (`DEBUG-LOG.md` entry 8) |
+| A username of `constructor` breaks Profile | Real. Reproduced and fixed (entry 9) |
+| Reviews in two tabs overwrite each other | Real. Reproduced and fixed (entry 10) |
+| Two tabs can overwrite each other's orders | **Not reachable.** Placing an order empties the shared cart, so the other tab's Checkout redirects first. The test the AI wrote for this failed for that reason. The real risk was in reviews |
+| Orders should belong to a username | **Rejected.** The annex's Order model has no owner field. Disclosed in `REPORT.md` |
+| Migrate the old cart format | **Rejected.** The site had never been deployed, so no old carts exist |
+
+**Corrections to the AI's own work:** its first fix for the footer's layout shift did nothing, because the rule was in the wrong CSS layer. Lighthouse showed the score hadn't moved, so it had to find out why (entry 14). A tool it wrote to split commits also corrupted line endings on Windows, which put the wrong contents in two unpushed commits. It redid them.
+
+---
+
+## Entry 8: BONUS, and bugs the tests found that the screen didn't show
+
+**Goal:** finish the BONUS list from the plan.
+
+**What the AI did:** built the seven items one branch at a time, and ran a code review on each before merging.
+
+**What the tests caught that nothing on the screen showed:** its first version of Endless requested the same products twice when Load more was pressed more than once. The page looked right, and only a test counting requests saw it. It traced the cause into React's own source (`DEBUG-LOG.md` entry 15).
+
+**Its mistakes about the project itself:** it said the Vercel import hadn't happened, because it was reading a GitHub count that Vercel doesn't update, when the site was already live. It also gave a finishing time based on the wrong time of day, and corrected both once it checked the clock and the site.
+
+**A claim it caught in its own plan:** the `@/` path alias was listed as BONUS and configured, but no file used it. It found that when checking the plan against the code, before this report could claim it.
+
+---
+
+## Entry 9: the street, and sound
+
+**Goal:** make the light theme better, and give the shop some atmosphere.
+
+**Prompt:**
+
+> what can we do to make the light theme better? not to steer off drastically from the tokyo vending machine feel, i was thinking maybe a small fisherman town in japan, maybe add some koi fish, bonsai trees, and let's also improve the dark theme a little with moreof an actual city feel. we could also add background sounds that suit the vibes of the themes. and could you also tell me what are all the eyecandy features and how to trigger them, and how to trigger the easter egg. what should i put in the vercel settings, continue
+
+**What I decided when it asked:** a taller band above the machine so the street can be seen, sound generated in the browser rather than audio files, sound off until pressed, and machine sound effects when it is on.
+
+**What the AI did:** generated the art as SVG from a script, and built the sound with the Web Audio API.
+
+**What it couldn't do:** it can't hear. It measured loudness by rendering the sound offline, so it can say nothing clips, but not that it sounds good.
+
+---
+
+## Entry 10: finishing
+
+**Goal:** know what was left, and get it done.
+
+**Prompt (verbatim):**
+> continue, how much till theassignment is fully done?
+
+**What the AI did:** gave an estimate, then made `main` ready to hand in first, so that nothing going wrong later could cost the graded work. It then finished the extras, moved the imports to the `@/` alias, recorded the video, and measured everything again on the live site.
+
+**The video:** entry 6 said it would start from a real recording. A script drives the live site in a real browser and adds the captions. `/brag` only makes a clip of 15 to 25 seconds, so it wasn't used. The AI then watched its own recording through frames, and that found what no test had: a Profile save that failed on screen while the caption said it had worked, and captions covering the shop's messages. It fixed both and recorded it again.
+
+**The sheet for my defence:** it tried all eight of the live changes I might be asked for, for real. One instruction was wrong: adding an order status doesn't make the compiler ask for the row in `ORDER_STATUS_STEPS`.
+
+**Its slips in this stretch:** a command it hadn't checked put an error message into a merged PR's description, where an Issue number belonged. A repeat of the test that deletes the extras didn't run at all because of a wrong path, and looked like a pass. It noticed both from the output and corrected them.
+
+---
+
+## Entry 11: the cars, the cat and the film
+
+**Goal:** fix what I found on the live site, and make the video feel finished.
+
+**Prompt (verbatim, the start of a longer message whose rest wasn't about the project):**
+> continue, for the video use our brag skills and all the motion graphics/advertisement knowledge and skills we got in our settings, the only issue i found is that the cars in the background showed up as invisible, and could you add the clickable animation to the cat, that if the cat is clicked it jumps up frightened, or when the machine shakesthe sound is good and the whole website runs fine.
+
+**What the AI did:** it drew real cars in place of two glowing dots (`DEBUG-LOG.md` entry 18), and made the cat a real button that jumps when clicked or when the machine shakes. It then rebuilt the video with HyperFrames: a cold open, chapter wipes, zooms that land just before each click, and the shop's own sounds rendered from its sound engine.
+
+**What it pointed out:** `/brag` makes clips of 15 to 25 seconds, and the annex asks for a 2 to 3 minute screen recording of the full flow. So it kept the real recording as the spine and used `/brag`'s deadpan tone, hook and sound rules around it. It also checked the music's licence before using it.
+
+**What it couldn't do:** it can't hear, so it measured the mix's levels and left the judgement to me.
+

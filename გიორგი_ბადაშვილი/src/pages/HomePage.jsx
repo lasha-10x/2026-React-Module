@@ -1,0 +1,367 @@
+import { useEffect, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
+import ProductGrid from "../components/ProductGrid";
+import ProductSkeleton from "../components/ProductSkeleton";
+const LIMIT = 12;
+function HomePage() {
+    const [products, setProducts] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [total, setTotal] = useState(0);
+    const [categories, setCategories] = useState([]);
+    // Retry-ისთვის მოთხოვნის ხელახლა გაშვების კონტროლი
+    const [retryCount, setRetryCount] = useState(0);
+    const [searchParams, setSearchParams] = useSearchParams();
+    // ყოველთვის უახლესი searchParams (debounce timer-ისთვის)
+    const searchParamsRef = useRef(searchParams);
+    searchParamsRef.current = searchParams;
+    // მიმდინარე გვერდი URL-იდან
+    const pageParam = Number(searchParams.get("page"));
+    const page = Number.isInteger(pageParam) && pageParam > 0 ? pageParam : 1;
+    // არჩეული კატეგორია URL-იდან
+    const category = searchParams.get("category") ?? "";
+    // არჩეული სორტირება URL-იდან
+    const sort = searchParams.get("sort") ?? "default";
+    // URL-იდან მიღებული საძიებო ტექსტი
+    const query = searchParams.get("q")?.trim() ?? "";
+    // Search input-ის მდგომარეობა
+    const [searchInput, setSearchInput] = useState(searchParams.get("q") ?? "");
+    // გვერდების საერთო რაოდენობა
+    const totalPages = Math.ceil(total / LIMIT);
+    // საჩვენებელი პროდუქტების ნომრები
+    const startItem = total === 0 ? 0 : (page - 1) * LIMIT + 1;
+    const endItem = Math.min(page * LIMIT, total);
+    // არასწორი ან უარყოფითი page პარამეტრის გასწორება
+    useEffect(() => {
+        const rawPage = searchParams.get("page");
+        if (rawPage === null) {
+            return;
+        }
+        const pageNumber = Number(rawPage);
+        if (!Number.isInteger(pageNumber) || pageNumber < 1) {
+            const nextParams = new URLSearchParams(searchParams);
+            nextParams.delete("page");
+            setSearchParams(nextParams, { replace: true });
+        }
+    }, [searchParams, setSearchParams]);
+    // კატეგორიების ჩამოტვირთვა
+    useEffect(() => {
+        const controller = new AbortController();
+        async function fetchCategories() {
+            try {
+                const response = await fetch("https://dummyjson.com/products/category-list", { signal: controller.signal });
+                if (!response.ok) {
+                    throw new Error("Categories could not be loaded.");
+                }
+                const data = await response.json();
+                setCategories(data);
+            }
+            catch (err) {
+                if (err instanceof Error && err.name === "AbortError") {
+                    return;
+                }
+                console.error("Category loading error:", err);
+            }
+        }
+        void fetchCategories();
+        return () => {
+            controller.abort();
+        };
+    }, []);
+    // Search-ის Debounce — 400ms, შემდეგ URL-ის განახლება
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            const trimmedSearch = searchInput.trim();
+            const currentParams = searchParamsRef.current;
+            const currentQuery = currentParams.get("q") ?? "";
+            // თუ საძიებო ტექსტი არ შეცვლილა, არაფერი გავაკეთოთ
+            if (trimmedSearch === currentQuery) {
+                return;
+            }
+            const nextParams = new URLSearchParams(currentParams);
+            // ძებნისას პირველი გვერდიდან ვიწყებთ
+            nextParams.set("page", "1");
+            if (trimmedSearch) {
+                nextParams.set("q", trimmedSearch);
+            }
+            else {
+                nextParams.delete("q");
+            }
+            setSearchParams(nextParams, { replace: true });
+        }, 400);
+        return () => {
+            clearTimeout(timer);
+        };
+    }, [searchInput, setSearchParams]);
+    // გვერდების სია, დამოკიდებულია მიმდინარე გვერდზე და საერთო გვერდების რაოდენობაზე
+    const getVisiblePages = () => {
+        if (totalPages <= 5) {
+            return Array.from({ length: totalPages }, (_, index) => index + 1);
+        }
+        if (page <= 3) {
+            return [1, 2, 3, "...", totalPages];
+        }
+        if (page >= totalPages - 2) {
+            return [1, "...", totalPages - 2, totalPages - 1, totalPages];
+        }
+        return [1, "...", page - 1, page, page + 1, "...", totalPages];
+    };
+    // პროდუქტების ჩამოტვირთვა
+    useEffect(() => {
+        const controller = new AbortController();
+        async function fetchProducts() {
+            try {
+                setLoading(true);
+                setError(null);
+                const skip = (page - 1) * LIMIT;
+                // Sorting პარამეტრები (ერთხელ ვაგებთ, ყველა ვარიანტისთვის)
+                const sortParams = new URLSearchParams();
+                if (sort !== "default") {
+                    const sortOptions = {
+                        "price-asc": { sortBy: "price", order: "asc" },
+                        "price-desc": { sortBy: "price", order: "desc" },
+                        "rating-desc": { sortBy: "rating", order: "desc" },
+                        "name-asc": { sortBy: "title", order: "asc" },
+                    };
+                    const selectedSort = sortOptions[sort];
+                    if (selectedSort) {
+                        sortParams.set("sortBy", selectedSort.sortBy);
+                        sortParams.set("order", selectedSort.order);
+                    }
+                }
+                // ძებნა + კატეგორია ერთად (API ამას პირდაპირ არ უჭერს მხარს)
+                if (query && category) {
+                    const params = new URLSearchParams(sortParams);
+                    params.set("limit", "0"); // 0 = ყველა პროდუქტი ამ კატეგორიიდან
+                    const response = await fetch(`https://dummyjson.com/products/category/${encodeURIComponent(category)}?${params.toString()}`, { signal: controller.signal });
+                    if (!response.ok) {
+                        throw new Error("Products could not be loaded.");
+                    }
+                    const data = await response.json();
+                    const normalizedQuery = query.toLowerCase();
+                    const filtered = data.products.filter((product) => product.title.toLowerCase().includes(normalizedQuery));
+                    // პაგინაცია კლიენტის მხარეს
+                    setProducts(filtered.slice(skip, skip + LIMIT));
+                    setTotal(filtered.length);
+                    return;
+                }
+                // დანარჩენი შემთხვევები
+                let endpoint;
+                if (query) {
+                    endpoint = "https://dummyjson.com/products/search";
+                }
+                else if (category) {
+                    endpoint = `https://dummyjson.com/products/category/${encodeURIComponent(category)}`;
+                }
+                else {
+                    endpoint = "https://dummyjson.com/products";
+                }
+                const params = new URLSearchParams(sortParams);
+                params.set("limit", String(LIMIT));
+                params.set("skip", String(skip));
+                if (query) {
+                    params.set("q", query);
+                }
+                const response = await fetch(`${endpoint}?${params.toString()}`, {
+                    signal: controller.signal,
+                });
+                if (!response.ok) {
+                    throw new Error("Products could not be loaded.");
+                }
+                const data = await response.json();
+                setProducts(data.products);
+                setTotal(data.total);
+            }
+            catch (err) {
+                if (err instanceof Error && err.name === "AbortError") {
+                    return;
+                }
+                setError(err instanceof Error ? err.message : "An unknown error occurred.");
+            }
+            finally {
+                if (!controller.signal.aborted) {
+                    setLoading(false);
+                }
+            }
+        }
+        void fetchProducts();
+        return () => {
+            controller.abort();
+        };
+    }, [page, query, category, sort, retryCount]);
+    // გვერდის შეცვლა
+    function handlePageChange(newPage) {
+        if (newPage < 1 || newPage > totalPages || newPage === page) {
+            return;
+        }
+        const nextParams = new URLSearchParams(searchParams);
+        nextParams.set("page", String(newPage));
+        setSearchParams(nextParams);
+        window.scrollTo({
+            top: 0,
+            behavior: "smooth",
+        });
+    }
+    // არასწორი გვერდის URL-ის გასწორება
+    useEffect(() => {
+        if (loading || total === 0) {
+            return;
+        }
+        if (page > totalPages) {
+            const nextParams = new URLSearchParams(searchParams);
+            nextParams.set("page", "1");
+            setSearchParams(nextParams, { replace: true });
+        }
+    }, [loading, total, page, totalPages, searchParams, setSearchParams]);
+    return (<section className="py-8 sm:py-12">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
+          Product Catalog
+        </h1>
+
+        <p className="mt-3 max-w-2xl text-gray-600">
+          Discover your favorite products and view their details.
+        </p>
+
+        {/* Search and Filters */}
+        <div className="mt-6 flex flex-col gap-4 md:flex-row md:items-end">
+          {/* Search */}
+          <div className="min-w-0 flex-1">
+            <label htmlFor="product-search" className="mb-2 block text-sm font-medium text-gray-700">
+              Search products
+            </label>
+
+            <input id="product-search" type="search" value={searchInput} onChange={(e) => setSearchInput(e.target.value)} placeholder="Search by product name..." className="h-12 w-full rounded-lg border border-gray-300 px-4 text-sm outline-none transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-100"/>
+          </div>
+
+          {/* Category Filter */}
+          <div className="min-w-0 flex-1">
+            <label htmlFor="category-filter" className="mb-2 block text-sm font-medium text-gray-700">
+              Filter by category
+            </label>
+
+            <select id="category-filter" value={category} onChange={(e) => {
+            const nextParams = new URLSearchParams(searchParams);
+            const selectedCategory = e.target.value;
+            nextParams.set("page", "1");
+            if (selectedCategory) {
+                nextParams.set("category", selectedCategory);
+            }
+            else {
+                nextParams.delete("category");
+            }
+            setSearchParams(nextParams);
+        }} className="h-12 w-full rounded-lg border border-gray-300 bg-white px-4 text-sm outline-none transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-100">
+              <option value="">All categories</option>
+
+              {categories.map((item) => (<option key={item} value={item}>
+                  {item
+                .split("-")
+                .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+                .join(" ")}
+                </option>))}
+            </select>
+          </div>
+
+          {/* Sort Filter */}
+          <div className="min-w-0 flex-1">
+            <label htmlFor="sort-filter" className="mb-2 block text-sm font-medium text-gray-700">
+              Sort by
+            </label>
+
+            <select id="sort-filter" value={sort} onChange={(e) => {
+            const nextParams = new URLSearchParams(searchParams);
+            const selectedSort = e.target.value;
+            nextParams.set("page", "1");
+            if (selectedSort === "default") {
+                nextParams.delete("sort");
+            }
+            else {
+                nextParams.set("sort", selectedSort);
+            }
+            setSearchParams(nextParams);
+        }} className="h-12 w-full rounded-lg border border-gray-300 bg-white px-4 text-sm outline-none transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-100">
+              <option value="default">Default</option>
+              <option value="price-asc">Price: low to high</option>
+              <option value="price-desc">Price: high to low</option>
+              <option value="rating-desc">Rating: high to low</option>
+              <option value="name-asc">Name: A → Z</option>
+            </select>
+          </div>
+
+          {/* Clear Filters Button */}
+          <div className="min-w-0 flex flex-col">
+            {/* Empty label space for alignment */}
+            <span className="mb-2 block text-sm font-medium invisible" aria-hidden="true">
+              Clear Filters
+            </span>
+
+            <button type="button" onClick={() => {
+            setSearchInput("");
+            setSearchParams({}, { replace: true });
+        }} disabled={!query && !category && sort === "default" && !searchInput} className="h-12 w-full rounded-lg border border-gray-300 px-4 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40">
+              Clear Filters
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {loading && (<section aria-label="Loading products">
+          <p role="status" className="mb-5 text-center text-sm text-gray-600">
+            Loading products...
+          </p>
+
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {Array.from({ length: LIMIT }).map((_, index) => (<ProductSkeleton key={index}/>))}
+          </div>
+        </section>)}
+
+      {!loading && error && (<div role="alert" className="rounded-lg border border-red-200 bg-red-50 p-6 text-red-700">
+          <h2 className="text-lg font-semibold">Something went wrong</h2>
+
+          <p className="mt-2">{error}</p>
+
+          <button type="button" onClick={() => setRetryCount((current) => current + 1)} className="mt-4 rounded-lg bg-red-600 px-5 py-2.5 font-medium text-white transition-colors hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2">
+            Try again
+          </button>
+        </div>)}
+
+      {!loading && !error && (<>
+          {products.length === 0 ? (<p className="py-12 text-center text-gray-600">
+              No products found.
+            </p>) : (<>
+              <p className="mb-5 text-sm text-gray-500">
+                Showing {startItem}-{endItem} of {total} products.
+              </p>
+
+              <ProductGrid products={products}/>
+
+              <div className="mt-10 flex flex-nowrap items-center justify-center gap-1 sm:gap-2">
+                <button type="button" onClick={() => handlePageChange(page - 1)} disabled={page === 1} aria-label="Previous page" className="shrink-0 rounded-lg border border-gray-300 px-2 py-0.5 sm:py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40">
+                  <span className="hidden sm:inline">Previous</span>
+                  <span className="sm:hidden text-lg">‹</span>
+                </button>
+
+                {getVisiblePages().map((pageNumber, index) => {
+                    if (pageNumber === "...") {
+                        return (<span key={`dots-${index}`} className="px-1 text-gray-500" aria-hidden="true">
+                        ...
+                      </span>);
+                    }
+                    return (<button key={pageNumber} type="button" onClick={() => handlePageChange(pageNumber)} aria-label={`Page ${pageNumber}`} aria-current={page === pageNumber ? "page" : undefined} className={`h-8 min-w-8 sm:h-10 sm:min-w-10 rounded-lg border px-1 sm:px-3 text-xs sm:text-sm font-medium transition-colors ${page === pageNumber
+                            ? "border-blue-600 bg-blue-600 text-white"
+                            : "border-gray-300 text-gray-700 hover:bg-gray-100"}`}>
+                      {pageNumber}
+                    </button>);
+                })}
+
+                <button type="button" onClick={() => handlePageChange(page + 1)} disabled={page === totalPages} aria-label="Next page" className="shrink-0 rounded-lg border border-gray-300 px-2 py-0.5 sm:py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40">
+                  <span className="hidden sm:inline">Next</span>
+                  <span className="sm:hidden text-lg">›</span>
+                </button>
+              </div>
+            </>)}
+        </>)}
+    </section>);
+}
+export default HomePage;

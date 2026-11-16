@@ -1,0 +1,48 @@
+# 10X Shop delivery report
+
+Remediation started on 2026-11-05 from verified source revision `967e75c32df74322975a99d034a0c95480516e8e`. [PR #4](https://github.com/pritulapavel/10x-shop-pavlepritula/pull/4) merged source `567a625a470df7f715d7159d62b028eb7ae914b6` into `main` as `4ed8f7ff73b8d9659a48450d304982a499017de5`. The [live demo](https://10x-shop-pavlepritula.vercel.app/) served entry `index-C3zB35AX.js`; the exact deployed Git revision was not established. The promo hint is the only new source change and was verified on local preview port 4209.
+
+## Scope and results
+
+The [resolution table](reports/full/RESOLUTION.md) maps the supplied CORE findings and the FULL work. Product metadata and stock badges, shared cent pricing, legacy cart recovery and the empty checkout explanation address the CORE findings. The FULL additions cover URL-driven catalog navigation, reviews and related items, reducer-backed promo and shipping, local orders, profile, theme, typed data boundaries, lazy routes and toasts.
+
+- Google Chrome 156.0.8078.81 verified search, filters, sorting, pagination, history, reviews and reload, sign-in return, cart and promo persistence, profile validation and save, theme, logout with a populated cart, and three invalid routes. At 375/480/481/768/1024/1025 CSS px the catalog had 1/1/2/3/3/4 columns and no document overflow. [Browser measurements](reports/full/chrome-preview.json) · [Compatibility](COMPATIBILITY.md)
+- In Firefox 159.0.1 at 1280 × 800 in a Private Window, the owner reported promo, F5, login return and validation checks. The targeted retest on port 4205 showed four matching $26.09 totals, 0 → 1 order, no badge and an empty cart after F5. Final Firefox and Edge/Safari scenarios remain open. [Owner evidence](docs/compat/firefox/2026-11-06/README.md)
+- The guest purchase of two Red Nail Polish units showed $24.33 in Cart, Checkout and confirmation ($15.92 subtotal, $1.59 promo discount and $10 shipping). Confirmation kept the delivery details, the badge disappeared and Cart stayed empty after F5. An accessibility click on Place order succeeded after the earlier locator click left the form unchanged. On a separate test origin, order #0001 kept its $18.94 total after F5 and sign-in. Reorder added one item, and the second purchase showed $18.05 across all three screens. Orders showed both frozen totals.
+- [Pricing](reports/full/check-pricing.mjs), [cart](reports/full/check-cart.mjs) and [orders](reports/full/check-orders.mjs) passed focused Node checks. An isolated Chrome fixture reproduced a failed legacy lookup, successful retry and a delayed response after quantity changes, removal and clearing. A separate fixture verified fallback and Reload after a lazy import rejected. Chrome also verified the empty Checkout notice, the empty Orders state, an unknown order ID and confirmed clearing of populated cart, orders and reviews while retaining the session and theme.
+- A desktop hover retest on the cream and green build verified the fix for the disabled Previous button. That run preserves the original colors and the before/after comparison. [Earlier hover evidence](reports/full/chrome-hover.json)
+- The earlier blue and graphite palette was checked in Chrome 156.0.8078.81 at 375 and 1920 CSS px. Sampled text reached at least 5.02:1, essential control borders reached at least 3.37:1, and keyboard focus reached 5.17:1 in light and 10.30:1 in dark. [Earlier palette measurements](reports/full/chrome-palette.json)
+- The 2026-11-06 refinement uses a compact retail heading, API result ranges, removable URL filters, aligned product cards and clearer totals. Chrome verified the catalog grid and both themes. The active in-app browser verified catalog history, the three native select popups, the shared cart and all four Checkout validation messages in each theme. Error text reached 6.47:1 in light and 8.93:1 in dark. [Measurements](reports/full/marketplace-verification.json) · [Current screenshots](COMPATIBILITY.md#current-marketplace-presentation)
+- Three comparable development Profiler runs measured median card-update render times of 6.1/6.3/5.2 ms before memoizing ProductCard and stabilizing its add callback, and 0.9/0.8/0.75 ms after. The fixture used 12 cards, six warm-up updates and 24 measured updates per run. [Full samples](reports/full/profiler-results.json)
+- The 2026-10-30 production Mobile audit recorded 95/100/100/83 and CLS 0 on the earlier deployment. [Historical audit](reports/lighthouse/2026-10-30/mobile_result.html) · [Earlier CORE results](reports/core/REPORT.md)
+- The owner's November 6 hosted Lighthouse 13.5.0 exports at 21:44 and 21:55 Tbilisi scored 99/100/100/100 Desktop and 100/100/100/100 Mobile. Meta description and robots audits both passed. Both reports contain extension URLs; Desktop recorded a screenshot timeout, and Mobile warned about extension interference. The earlier hosted audits remain baselines. A clean audit of the post-hint deployment is pending. [Latest exports](reports/final/2026-11-06/README.md) · [Historical baselines and launcher limitations](reports/lighthouse/2026-11-06/README.md)
+
+Earlier local Chrome checks covered stock states, numbered navigation, saved-order labels and four Reorder outcomes. On the latest hosted build Chrome verified Catalog metadata, lazy thumbnails, Product reload and both app NotFound paths. In a separate in-app browser, a synthetic purchase returned from guest login, showed all four validation errors before correction and matched $17.96 in Cart, Checkout, confirmation and saved Order Details. The badge disappeared, direct order reload returned through login and Cart was still empty after reload. A single order does not verify rapid duplicate submission.
+
+On the promo follow-up, typecheck, lint, build and the existing cart regression passed. Chrome checked the new description, invalid and valid codes and removal in the local production preview. A separate local in-app browser double-click on Place order produced one saved order from zero, with $18.94 in confirmation and Orders. [Dated browser evidence](reports/final/2026-11-06/README.md) · [Earlier stock and Reorder evidence](reports/final/chrome-checks.json) · [ID-by-ID status](reports/final/GRADING-STATUS.md)
+
+Chrome also exercised the existing Formik/Yup phone validation in Profile. Empty or whitespace-only input saved as omitted. Nine and fifteen digits and supported formatting saved. Invalid letters, punctuation alone, eight or sixteen digits showed the exact error and prevented the toast and Header update. A valid correction saved. No Profile code change was needed. [Phone evidence](reports/final/profile-phone-checks.json)
+
+## Metrics as of 2026-11-06
+
+| Metric | Historical assessment (`967e75c`) | Current observation |
+| --- | --- | --- |
+| Git commits / author dates | 12 / 5 | 20 / 6 on remote `main` through PR #4, based on the owner-confirmed count and recorded ancestry. The local `origin/main` reference remains at `27fb288` |
+| Merged PRs / Issues | 0 / 0 | 4 / 0 in connected GitHub search on November 6 |
+| Hours | No tracked hours supplied | 44 estimated in the reconstructed WBS. Verified tracked hours unavailable |
+| Production build size | Not measured in the grading report | Local port 4209 build: 16 JS assets, 408,870 B raw / 132,715 B gzip combined; CSS 35,686 B / 7,280 B; entry 247,319 B / 76,917 B. Gzip calculated per file with Node defaults |
+| Production Lighthouse, P/A/BP/SEO | 2026-10-30 Mobile 95/100/100/83 (earlier release) | Nov 6 21:44 Desktop 99/100/100/100, 21:55 Mobile 100/100/100/100; both on hosted `index-C3zB35AX.js`, with the limitations above. [Earlier November 6 baselines](reports/lighthouse/2026-11-06/README.md) |
+
+## Implementation choices
+
+1. Shared pricing rounds the discounted unit to cents before multiplication. A $9.99 item at 10% costs $8.99 per unit and $53.94 for six. Shipping uses the product-discounted subtotal before the promo.
+2. Old cart rows remain usable after price lookup. The merge uses the latest quantity and accepts a response only for a still-present row without resolved pricing. Failed requests retain the row and expose Retry.
+3. Orders keep copied delivery fields, unit and line amounts, and final totals. A failed order write leaves the cart available. Saving the order precedes cart clearing and confirmation uses the saved snapshot.
+
+Remaining delivery checks cover the additional browsers, a focused hosted promo retest and a clean Lighthouse run after publication. The [compatibility record](COMPATIBILITY.md) separates local and hosted results. The [debug log](DEBUG-LOG.md) preserves the four earlier cases and three reproduced and verified remediation fixes.
+
+## Process and assistance
+
+The original assessment recorded 12 commits across five dates. The first plan dates to October 26 and missed the October 23 cutoff. The three [weekly notes](docs/progress/week-01.md) were reconstructed on November 6. The 15 development days, 40 commits and eight merged PRs are not evidenced; tracked hours are unavailable. GitHub metadata identifies the repository as public; signed-out access still needs an owner check. Automatic review declined issue creation, and no Project or milestone was verified. The [21 definitions and duplicate-check workflow](reports/final/GITHUB-TRACKING.md) remain local.
+
+Codex reviewed the existing project, implemented the remediation, exercised the API and local browser, reproduced pricing and search-focus defects, and wrote focused checks and documentation. The owner supplied earlier manual grid measurements and Lighthouse files. [Demo recording script](reports/full/DEMO.md) · [Current plan](PLAN.md)

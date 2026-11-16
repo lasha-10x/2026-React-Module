@@ -1,0 +1,20 @@
+/**
+ * NOTE: the minus / number / plus control for choosing a quantity.
+ * Why it exists: the product page and every cart line need the same control with the same limits.
+ * Connects to: `ProductPage` and `CartLine`. The parent owns the number and passes it down, then this
+ * tells the parent when it should change (a "callback prop", which is how lifting state up works).
+ */
+const stepButton = "size-11 rounded-md text-xl text-ink disabled:cursor-not-allowed disabled:text-edge-bright";
+export default function Stepper({ value, min = 1, max, onChange, label = "Quantity" }) {
+    return (<div role="group" aria-label={label} className="inline-flex items-center rounded-md bg-well shadow-[inset_0_0_0_1px_var(--edge)]">
+      {/* Disabled at the limits, so it is clear why nothing would happen (PRD P3). */}
+      <button type="button" aria-label="One less" disabled={value <= min} onClick={() => onChange(value - 1)} className={stepButton}>
+        −
+      </button>
+      {/* A small dark panel of its own: amber on the light theme's white field would be unreadable. */}
+      <output className="led-text min-w-10 rounded bg-led-panel px-1 text-center text-[22px]">{value}</output>
+      <button type="button" aria-label="One more" disabled={value >= max} onClick={() => onChange(value + 1)} className={stepButton}>
+        +
+      </button>
+    </div>);
+}

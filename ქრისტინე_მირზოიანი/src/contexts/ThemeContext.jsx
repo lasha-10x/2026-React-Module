@@ -1,0 +1,36 @@
+import { createContext, useContext, useState, useEffect } from 'react';
+import { themeStorage } from '../models/StorageService';
+const ThemeContext = createContext(undefined);
+export function ThemeProvider({ children }) {
+    const [theme, setTheme] = useState(() => {
+        const storedTheme = themeStorage.get();
+        return storedTheme === 'light' ? 'light' : 'dark';
+    });
+    // Save to localStorage when theme changes
+    useEffect(() => {
+        const root = document.documentElement;
+        if (theme === 'dark') {
+            root.classList.add('dark');
+            root.setAttribute('data-theme', 'dark');
+        }
+        else {
+            root.classList.remove('dark');
+            root.setAttribute('data-theme', 'light');
+        }
+        themeStorage.set(theme);
+    }, [theme]);
+    const toggleTheme = () => {
+        setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
+    };
+    return (<ThemeContext.Provider value={{ theme, toggleTheme }}>
+        {children}
+        </ThemeContext.Provider>);
+}
+// Custom hook to consume theme anywhere in the app
+export function useTheme() {
+    const context = useContext(ThemeContext);
+    if (!context) {
+        throw new Error('useTheme must be used within a ThemeProvider');
+    }
+    return context;
+}

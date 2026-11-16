@@ -1,0 +1,56 @@
+import { useEffect, useMemo, useState } from "react";
+import { isProduct } from "../api/products";
+import { isRecord } from "../api/client";
+import { Order } from "../models/Order";
+import { StorageService } from "../services/StorageService";
+import { STORAGE_KEYS } from "../services/storageKeys";
+import { useAuth } from "../hooks/useAuth";
+import { OrdersContext } from "./orders-context";
+const SHIPPING_FIELDS = ["fullName", "email", "phone", "address", "city", "postalCode", "country"];
+function isShippingInfo(value) {
+    return isRecord(value) && SHIPPING_FIELDS.every((key) => typeof value[key] === "string") &&
+        (value.paymentMethod === undefined || value.paymentMethod === "card" || value.paymentMethod === "cash-on-delivery");
+}
+function isOrderData(value) {
+    if (!isRecord(value))
+        return false;
+    const order = value;
+    return (typeof order.id === "number" &&
+        typeof order.number === "string" &&
+        typeof order.username === "string" &&
+        typeof order.placedAt === "string" &&
+        Array.isArray(order.items) &&
+        order.items.every((item) => typeof item === "object" && item !== null && "product" in item && isProduct(item.product) &&
+            "quantity" in item && typeof item.quantity === "number") &&
+        isShippingInfo(order.shipping) &&
+        typeof order.subtotal === "number" &&
+        typeof order.discount === "number" &&
+        typeof order.shippingCost === "number" &&
+        typeof order.total === "number" &&
+        (order.promoCode === null || typeof order.promoCode === "string"));
+}
+const isOrderList = (value) => Array.isArray(value) && value.every(isOrderData);
+const orderStorage = new StorageService(STORAGE_KEYS.orders, isOrderList, []);
+export function OrdersProvider({ children }) {
+    const { user } = useAuth();
+    const [allOrders, setAllOrders] = useState(() => orderStorage.load());
+    // Orders survive logout/login because they are stored per username, not per session.
+    useEffect(() => {
+        orderStorage.save(allOrders);
+    }, [allOrders]);
+    const orders = useMemo(() => (user ? allOrders.filter((order) => order.username === user.username).map(Order.fromJSON) : []), [allOrders, user]);
+    function placeOrder(cart, shipping) {
+        // Sequential numbers across all orders saved in this browser: 10X-00001, 10X-00002, ...
+        const sequence = allOrders.reduce((max, order) => Math.max(max, Number(order.number.slice(4)) || 0), 0) + 1;
+        const order = Order.create(cart, shipping, { username: user?.username ?? "guest", sequence });
+        setAllOrders((current) => [order.toJSON(), ...current]);
+        return order;
+    }
+    /** Deletes the signed-in shopper's orders only; other shoppers' orders stay. */
+    function clearOrders() {
+        if (!user)
+            return;
+        setAllOrders((current) => current.filter((order) => order.username !== user.username));
+    }
+    return <OrdersContext.Provider value={{ orders, placeOrder, clearOrders }}>{children}</OrdersContext.Provider>;
+}

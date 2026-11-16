@@ -1,0 +1,292 @@
+import { useCallback, useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
+import { getCategories, getProducts } from "../api/products";
+import { isApiError } from "../errors/ApiError";
+import ProductCard from "../components/ProductCard";
+import ProductCardSkeleton from "../components/ProductCardSkeleton";
+import { useDebounce } from "../hooks/useDebounce";
+const PAGE_SIZE = 12;
+const SORT_OPTIONS = [
+    "default",
+    "price-asc",
+    "price-desc",
+    "rating-desc",
+    "title-asc",
+];
+function SearchField({ initialValue, onSearch, }) {
+    const [value, setValue] = useState(initialValue);
+    const debouncedValue = useDebounce(value, 400);
+    useEffect(() => {
+        if (value !== debouncedValue) {
+            return;
+        }
+        const trimmedValue = debouncedValue.trim();
+        if (trimmedValue !== initialValue) {
+            onSearch(trimmedValue);
+        }
+    }, [value, debouncedValue, initialValue, onSearch]);
+    return (<div>
+            <label htmlFor="product-search" className="mb-2 block font-medium text-slate-700 dark:text-slate-200">
+                Search Products
+            </label>
+
+            <input id="product-search" type="search" value={value} onChange={(event) => setValue(event.target.value)} placeholder="Search by product name..." className="w-full rounded-lg border border-slate-300 bg-white p-3 text-slate-900 placeholder:text-slate-400 outline-none focus:border-indigo-500 dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:placeholder:text-slate-400"/>
+        </div>);
+}
+function getValidPage(value) {
+    const page = Number(value);
+    if (!value ||
+        !Number.isSafeInteger(page) ||
+        page < 1) {
+        return 1;
+    }
+    return page;
+}
+function getValidSort(value) {
+    if (value &&
+        SORT_OPTIONS.includes(value)) {
+        return value;
+    }
+    return "default";
+}
+export default function Products() {
+    const [searchParams, setSearchParams] = useSearchParams();
+    const search = searchParams.get("q") ?? "";
+    const category = searchParams.get("category") ?? "all";
+    const sort = getValidSort(searchParams.get("sort"));
+    const page = getValidPage(searchParams.get("page"));
+    const [products, setProducts] = useState([]);
+    const [categories, setCategories] = useState([]);
+    const [total, setTotal] = useState(0);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [retryCount, setRetryCount] = useState(0);
+    // Update URL after the search debounce.
+    const handleSearch = useCallback((value) => {
+        const nextParams = new URLSearchParams();
+        if (value) {
+            nextParams.set("q", value);
+        }
+        if (sort !== "default") {
+            nextParams.set("sort", sort);
+        }
+        setLoading(true);
+        setSearchParams(nextParams);
+    }, [sort, setSearchParams]);
+    // Fetch products whenever URL filters or page change.
+    useEffect(() => {
+        const controller = new AbortController();
+        async function loadProducts() {
+            try {
+                const data = await getProducts({
+                    page,
+                    limit: PAGE_SIZE,
+                    search,
+                    category,
+                    sort,
+                }, controller.signal);
+                if (!controller.signal.aborted) {
+                    setProducts(data.products);
+                    setTotal(data.total);
+                    setError(null);
+                    setLoading(false);
+                }
+            }
+            catch (error) {
+                if (!controller.signal.aborted) {
+                    if (isApiError(error)) {
+                        setError(error.message);
+                    }
+                    else {
+                        setError("Failed to load products.");
+                    }
+                    setLoading(false);
+                }
+            }
+        }
+        void loadProducts();
+        return () => {
+            controller.abort();
+        };
+    }, [page, search, category, sort, retryCount]);
+    // Load categories independently.
+    useEffect(() => {
+        const controller = new AbortController();
+        async function loadCategories() {
+            try {
+                const data = await getCategories(controller.signal);
+                if (!controller.signal.aborted) {
+                    setCategories(data);
+                }
+            }
+            catch (error) {
+                if (!controller.signal.aborted) {
+                    console.error("Failed to load categories:", error);
+                }
+            }
+        }
+        void loadCategories();
+        return () => {
+            controller.abort();
+        };
+    }, []);
+    const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+    const handleCategoryChange = (value) => {
+        const nextParams = new URLSearchParams();
+        if (value !== "all") {
+            nextParams.set("category", value);
+        }
+        if (sort !== "default") {
+            nextParams.set("sort", sort);
+        }
+        setLoading(true);
+        setSearchParams(nextParams);
+    };
+    const handleSortChange = (value) => {
+        const nextParams = new URLSearchParams();
+        if (search.trim()) {
+            nextParams.set("q", search);
+        }
+        else if (category !== "all") {
+            nextParams.set("category", category);
+        }
+        if (value !== "default") {
+            nextParams.set("sort", value);
+        }
+        setLoading(true);
+        setSearchParams(nextParams);
+    };
+    const handlePageChange = (nextPage) => {
+        if (nextPage < 1 ||
+            nextPage > totalPages ||
+            nextPage === page) {
+            return;
+        }
+        const nextParams = new URLSearchParams(searchParams);
+        nextParams.set("page", String(nextPage));
+        setLoading(true);
+        setSearchParams(nextParams);
+        window.scrollTo({
+            top: 0,
+            behavior: "smooth",
+        });
+    };
+    const handleClearFilters = () => {
+        setLoading(true);
+        setSearchParams(new URLSearchParams());
+    };
+    // Local sorting fallback for the returned page.
+    const sortedProducts = [...products];
+    switch (sort) {
+        case "price-asc":
+            sortedProducts.sort((a, b) => a.price - b.price);
+            break;
+        case "price-desc":
+            sortedProducts.sort((a, b) => b.price - a.price);
+            break;
+        case "rating-desc":
+            sortedProducts.sort((a, b) => b.rating - a.rating);
+            break;
+        case "title-asc":
+            sortedProducts.sort((a, b) => a.title.localeCompare(b.title));
+            break;
+        default:
+            break;
+    }
+    const hasFilters = search.trim() !== "" ||
+        category !== "all" ||
+        sort !== "default";
+    return (<main className="mx-auto max-w-7xl p-8 text-slate-900 dark:text-slate-100">
+            <h1 className="mb-8 text-3xl font-bold text-slate-900 dark:text-white">
+                Our Products
+            </h1>
+
+            <div className="mb-6 grid gap-4 md:grid-cols-3">
+                <SearchField key={search} initialValue={search} onSearch={handleSearch}/>
+
+                <div>
+                    <label htmlFor="category-filter" className="mb-2 block font-medium text-slate-700 dark:text-slate-200">
+                        Filter by Category
+                    </label>
+
+                    <select id="category-filter" value={category} onChange={(event) => handleCategoryChange(event.target.value)} className="w-full rounded-lg border border-slate-300 bg-white p-3 text-slate-900 outline-none focus:border-indigo-500 dark:border-slate-600 dark:bg-slate-800 dark:text-white">
+                        <option value="all">
+                            All Categories
+                        </option>
+
+                        {categories.map((item) => (<option key={item} value={item}>
+                                {item}
+                            </option>))}
+                    </select>
+                </div>
+
+                <div>
+                    <label htmlFor="product-sort" className="mb-2 block font-medium text-slate-700 dark:text-slate-200">
+                        Sort Products
+                    </label>
+
+                    <select id="product-sort" value={sort} onChange={(event) => handleSortChange(event.target.value)} className="w-full rounded-lg border border-slate-300 bg-white p-3 text-slate-900 outline-none focus:border-indigo-500 dark:border-slate-600 dark:bg-slate-800 dark:text-white">
+                        <option value="default">
+                            Default
+                        </option>
+
+                        <option value="price-asc">
+                            Price: Low to High
+                        </option>
+
+                        <option value="price-desc">
+                            Price: High to Low
+                        </option>
+
+                        <option value="rating-desc">
+                            Rating: High to Low
+                        </option>
+
+                        <option value="title-asc">
+                            Title: A to Z
+                        </option>
+                    </select>
+                </div>
+            </div>
+
+            {hasFilters && (<button type="button" onClick={handleClearFilters} className="mb-6 rounded-lg border border-slate-300 px-4 py-2 font-medium text-slate-700 hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-800">
+                    Clear Filters
+                </button>)}
+
+            {loading ? (<section aria-label="Loading products" aria-busy="true" className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+                    {Array.from({ length: 8 }, (_, index) => (<ProductCardSkeleton key={index}/>))}
+                </section>) : error ? (<div>
+                    <p role="alert" className="mb-4 text-red-600 dark:text-red-400">
+                        {error}
+                    </p>
+
+                    <button type="button" onClick={() => {
+                setLoading(true);
+                setError(null);
+                setRetryCount((count) => count + 1);
+            }} className="rounded-lg bg-indigo-600 px-4 py-2 font-medium text-white hover:bg-indigo-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
+                        Try Again
+                    </button>
+                </div>) : (<>
+                    {sortedProducts.length === 0 ? (<p className="text-slate-600 dark:text-slate-300">
+                            No products found.
+                        </p>) : (<div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+                            {sortedProducts.map((product) => (<ProductCard key={product.id} product={product}/>))}
+                        </div>)}
+
+                    {totalPages > 1 && (<nav aria-label="Product pagination" className="mt-10 flex flex-wrap items-center justify-center gap-4">
+                            <button type="button" onClick={() => handlePageChange(page - 1)} disabled={page === 1} className="rounded-lg border border-slate-300 px-4 py-2 font-medium text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-800">
+                                Previous
+                            </button>
+
+                            <span className="text-sm font-medium text-slate-700 dark:text-slate-200">
+                                Page {page} of {totalPages}
+                            </span>
+
+                            <button type="button" onClick={() => handlePageChange(page + 1)} disabled={page >= totalPages} className="rounded-lg border border-slate-300 px-4 py-2 font-medium text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-800">
+                                Next
+                            </button>
+                        </nav>)}
+                </>)}
+        </main>);
+}

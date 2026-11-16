@@ -1,0 +1,66 @@
+import { useState } from "react";
+import { Link, useNavigate, useLocation } from "react-router";
+import { useAuth } from "../context/AuthContext";
+function Login() {
+    const { login } = useAuth();
+    const navigate = useNavigate();
+    const location = useLocation();
+    // Return to checkout only when the guard supplied that destination
+    const destination = location.state === "/checkout" ? "/checkout" : "/";
+    const [username, setUsername] = useState("");
+    const [password, setPassword] = useState("");
+    const [errors, setErrors] = useState({});
+    function handleSubmit(event) {
+        event.preventDefault();
+        const nextErrors = {};
+        if (username.trim() === "") {
+            nextErrors.username = "Username is required";
+        }
+        if (password === "") {
+            nextErrors.password = "Password is required";
+        }
+        else if (password.length < 6) {
+            nextErrors.password = "Password must be at least 6 characters";
+        }
+        setErrors(nextErrors);
+        if (nextErrors.username || nextErrors.password) {
+            return;
+        }
+        login(username.trim());
+        setPassword("");
+        navigate(destination, { replace: true });
+    }
+    return (<section className="mx-auto my-10 w-full max-w-md rounded-2xl border border-teal-200 bg-teal-50 px-6 py-8 text-slate-900 shadow-lg shadow-teal-900/10 dark:border-teal-800 dark:bg-[#14332e] dark:text-slate-100 dark:shadow-black/20">
+            <h1 className="mb-6 text-3xl font-bold">Log in</h1>
+
+            <form onSubmit={handleSubmit} noValidate className="space-y-4">
+                <div>
+                    <label htmlFor="username" className="mb-1 block font-medium">
+                        Username
+                    </label>
+                    <input id="username" name="username" type="text" autoComplete="username" value={username} onChange={(event) => setUsername(event.target.value)} className="w-full rounded-lg border border-teal-300 bg-white/60 px-3 py-2 text-slate-900 focus:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-600 dark:border-teal-700 dark:bg-[#1c4039] dark:text-slate-100 dark:focus:border-teal-400 dark:focus:ring-teal-400"/>
+                    {errors.username && (<p className="mt-1 text-sm text-red-700 dark:text-red-400" role="alert">
+                            {errors.username}
+                        </p>)}
+                </div>
+
+                <div>
+                    <label htmlFor="password" className="mb-1 block font-medium">
+                        Password
+                    </label>
+                    <input id="password" name="password" type="password" autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} className="w-full rounded-lg border border-teal-300 bg-white/60 px-3 py-2 text-slate-900 focus:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-600 dark:border-teal-700 dark:bg-[#1c4039] dark:text-slate-100 dark:focus:border-teal-400 dark:focus:ring-teal-400"/>
+                    {errors.password && (<p className="mt-1 text-sm text-red-700 dark:text-red-400" role="alert">
+                            {errors.password}
+                        </p>)}
+                </div>
+                <button type="submit" className="w-full rounded-lg bg-teal-700 px-4 py-3 font-semibold text-white transition-colors hover:bg-teal-800 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-teal-600 dark:bg-teal-300 dark:text-teal-950 dark:hover:bg-teal-200 dark:focus-visible:outline-teal-400">
+                    Log In
+                </button>
+            </form>
+
+            <Link to="/" className="mt-6 inline-block rounded text-teal-700 hover:text-teal-900 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-teal-600 dark:text-teal-300 dark:hover:text-teal-200 dark:focus-visible:outline-teal-400">
+                ← Back to catalog
+            </Link>
+        </section>);
+}
+export default Login;

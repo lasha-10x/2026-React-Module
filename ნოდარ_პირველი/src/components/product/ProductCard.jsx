@@ -1,0 +1,63 @@
+import { Link } from "react-router";
+import StockBadge from "./StockBadge";
+import { useCart } from "../../context/cartContext";
+import { discountedPrice, formatPrice } from "../../utils/formats";
+// სრული კლასის სახელები, რომ Tailwind-მა იპოვოს
+const TILE_COLORS = ["bg-sky", "bg-lime", "bg-blush", "bg-periwinkle"];
+const badgeBase = "rounded-full border-2 border-ink px-2 py-0.5 text-xs font-bold";
+export default function ProductCard({ product, onAdd }) {
+    const finalPrice = discountedPrice(product.price, product.discountPercentage);
+    const hasDiscount = product.discountPercentage >= 1;
+    const isOutOfStock = product.stock === 0;
+    // რამდენი ცალია უკვე კალათაში. გამოითვლება და state-ში არ ინახება
+    const { items } = useCart();
+    const inCart = items.find((item) => item.productId === product.id)?.quantity ?? 0;
+    // id-ით ფერს ვირჩევთ, რომ ერთი პროდუქტი ყოველთვის ერთი ფერის იყოს
+    const tileColor = TILE_COLORS[product.id % TILE_COLORS.length];
+    return (<article className="flex w-full flex-col rounded-2xl border-3 border-ink bg-paper p-4 shadow-brutal">
+      {/* ბარათი ბმულია, ღილაკის გარდა. ღილაკი Link-ის შიგნით არ უნდა იყოს (a11y) */}
+      <Link to={`/products/${product.id}`} className="group flex flex-1 flex-col rounded-xl focus-visible:outline-3 focus-visible:outline-offset-4 focus-visible:outline-ink">
+        <div className={`${tileColor} relative overflow-hidden rounded-xl border-2 border-ink`}>
+          {/* width/height: ბრაუზერი ადგილს წინასწარ იტოვებს და გვერდი არ "ხტება" (CLS) */}
+          <img src={product.thumbnail} alt={product.title} width={300} height={300} loading="lazy" className="aspect-square w-full object-contain transition-transform group-hover:scale-105"/>
+          {/* > 0 და არა უბრალოდ inCart &&, თორემ 0-ზე "0" დაიხატება */}
+          {inCart > 0 && (<span className="absolute top-2 right-2 rounded-full border-2 border-ink bg-punch px-2.5 py-0.5 text-sm font-bold shadow-brutal-sm">
+              {inCart} in cart
+            </span>)}
+        </div>
+
+        <p className="mt-3 text-xs font-bold uppercase tracking-wide">
+          {product.category}
+          {/* brand არასავალდებულოა: მხოლოდ მაშინ ვხატავთ, თუ არსებობს */}
+          {product.brand && ` · ${product.brand}`}
+        </p>
+
+        <h2 className="mt-1 text-lg font-medium leading-snug group-hover:underline">
+          {product.title}
+        </h2>
+
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <span className="text-2xl font-bold">{formatPrice(finalPrice)}</span>
+          {hasDiscount && (<>
+              <span className="text-sm line-through">
+                {formatPrice(product.price)}
+              </span>
+              <span className={`${badgeBase} bg-green-300`}>
+                −{Math.round(product.discountPercentage)}%
+              </span>
+            </>)}
+        </div>
+
+        <div className="mt-auto flex items-center justify-between gap-2 pt-3 text-sm">
+          <span aria-label={`Rating ${product.rating} out of 5`}>
+            ★ {product.rating.toFixed(1)}
+          </span>
+          <StockBadge stock={product.stock}/>
+        </div>
+      </Link>
+
+      <button type="button" onClick={() => onAdd(product)} disabled={isOutOfStock} className="mt-4 w-full rounded-xl border-3 border-ink bg-punch py-2.5 font-bold shadow-brutal-sm transition-all enabled:hover:bg-punch-dark enabled:active:translate-x-0.5 enabled:active:translate-y-0.5 enabled:active:shadow-none focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-ink disabled:cursor-not-allowed disabled:bg-gray-300 disabled:shadow-none">
+        {isOutOfStock ? "Out of stock" : "Add to cart"}
+      </button>
+    </article>);
+}

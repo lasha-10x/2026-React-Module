@@ -1,0 +1,123 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-canvas: var(--shop-canvas);
+  --color-surface: var(--shop-surface);
+  --color-surface-muted: var(--shop-surface-muted);
+  --color-ink: var(--shop-ink);
+  --color-muted: var(--shop-muted);
+  --color-line: var(--shop-line);
+  --color-control: var(--shop-control);
+  --color-accent: var(--shop-accent);
+  --color-accent-ink: var(--shop-accent-ink);
+  --color-accent-hover: var(--shop-accent-hover);
+  --color-accent-soft: var(--shop-accent-soft);
+  --color-on-accent-soft: var(--shop-on-accent-soft);
+  --color-on-accent: var(--shop-on-accent);
+  --color-focus: var(--shop-focus);
+  --color-disabled-surface: var(--shop-disabled-surface);
+  --color-disabled-ink: var(--shop-disabled-ink);
+  --color-success: var(--shop-success);
+  --color-success-soft: var(--shop-success-soft);
+  --color-danger: var(--shop-danger);
+  --color-danger-soft: var(--shop-danger-soft);
+  --color-warning: var(--shop-warning);
+  --color-warning-soft: var(--shop-warning-soft);
+  --color-brand-plate: var(--shop-brand-plate);
+  --radius-card: 1rem;
+  --radius-control: 0.75rem;
+  --shadow-card: var(--shop-shadow-card);
+  --shadow-raised: var(--shop-shadow-raised);
+}
+
+:root {
+  color-scheme: light;
+  --shop-canvas: #f6f9fc;
+  --shop-surface: #ffffff;
+  --shop-surface-muted: #eef3f9;
+  --shop-ink: #0a2540;
+  --shop-muted: #425466;
+  --shop-line: #dce4ee;
+  --shop-control: #7a8da6;
+  --shop-accent: #635bff;
+  --shop-accent-ink: #5046cb;
+  --shop-accent-hover: #5147e8;
+  --shop-accent-soft: #f0efff;
+  --shop-on-accent-soft: var(--shop-accent-ink);
+  --shop-on-accent: #ffffff;
+  --shop-focus: #5046cb;
+  --shop-disabled-surface: #e8eef5;
+  --shop-disabled-ink: #536579;
+  --shop-success: #047857;
+  --shop-success-soft: #ecfdf5;
+  --shop-danger: #b91c1c;
+  --shop-danger-soft: #fef2f2;
+  --shop-warning: #92400e;
+  --shop-warning-soft: #fffbeb;
+  --shop-brand-plate: #171d29;
+  --shop-shadow-card: 0 1px 2px #0a25400b, 0 4px 14px -8px #0a254022;
+  --shop-shadow-raised: 0 8px 24px -10px #0a254034, 0 2px 5px #0a25400b;
+  font-family: system-ui, 'Segoe UI', sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --shop-canvas: #081729;
+  --shop-surface: #11243b;
+  --shop-surface-muted: #192f4b;
+  --shop-ink: #f6f9fc;
+  --shop-muted: #b8c7d9;
+  --shop-line: #31465f;
+  --shop-control: #7e92ad;
+  --shop-accent: #a99fff;
+  --shop-accent-ink: #bcb3ff;
+  --shop-accent-hover: #c4baff;
+  --shop-accent-soft: #252451;
+  --shop-on-accent-soft: var(--shop-accent-ink);
+  --shop-on-accent: #081729;
+  --shop-focus: #bcb3ff;
+  --shop-disabled-surface: #263b55;
+  --shop-disabled-ink: #aab9cc;
+  --shop-success: #6ee7b7;
+  --shop-success-soft: #102e26;
+  --shop-danger: #fda4af;
+  --shop-danger-soft: #351c27;
+  --shop-warning: #fcd34d;
+  --shop-warning-soft: #332a18;
+  --shop-shadow-card: 0 1px 2px #00000024, 0 4px 14px -8px #0000005c;
+  --shop-shadow-raised: 0 8px 24px -10px #0000008c, 0 2px 5px #00000024;
+}
+
+@layer base {
+  body { @apply bg-canvas text-ink; }
+  :focus-visible { outline: 2px solid var(--shop-focus); outline-offset: 3px; }
+}
+
+@layer components {
+  .shop-container { @apply mx-auto w-full max-w-7xl px-4 sm:px-6; }
+  .panel { @apply rounded-card border border-line bg-surface shadow-card; }
+  .interactive-panel { @apply motion-safe:transition-[border-color,box-shadow] hover:border-control hover:shadow-raised focus-within:border-control; }
+  .product-grid { @apply grid grid-cols-1 gap-4 min-[481px]:grid-cols-2 min-[768px]:grid-cols-3 min-[1025px]:grid-cols-4 lg:gap-5; }
+  .product-card { @apply flex min-w-0 flex-col p-3 sm:p-4; }
+  .catalog-intro {
+    @apply space-y-4 rounded-card border border-line bg-surface p-3 shadow-card sm:space-y-5 sm:p-5;
+    background-image: radial-gradient(ellipse at top right, var(--shop-accent-soft), transparent 70%);
+  }
+  .catalog-count { @apply w-fit rounded-full bg-accent-soft px-3 py-1.5 text-sm font-medium text-on-accent-soft tabular-nums; }
+  .field { @apply min-h-11 w-full rounded-control border border-control bg-surface px-3.5 py-2 text-base text-ink placeholder:text-muted motion-safe:transition-colors enabled:hover:border-focus aria-invalid:border-danger aria-invalid:bg-danger-soft; }
+  .control-label { @apply mb-1 block text-sm font-semibold text-ink; }
+  .field-error { @apply mt-2 rounded-md bg-danger-soft px-2.5 py-1.5 text-sm font-medium text-danger; }
+  .primary-button { @apply inline-flex min-h-11 min-w-11 cursor-pointer items-center justify-center rounded-control bg-accent px-4 py-2.5 text-center text-sm font-semibold text-on-accent motion-safe:transition-colors not-disabled:hover:bg-accent-hover not-disabled:active:bg-accent-hover disabled:cursor-not-allowed disabled:bg-disabled-surface disabled:text-disabled-ink; }
+  .secondary-button { @apply inline-flex min-h-11 min-w-11 cursor-pointer items-center justify-center rounded-control border border-control bg-surface px-4 py-2.5 text-center text-sm font-semibold text-ink motion-safe:transition-colors not-disabled:hover:bg-surface-muted not-disabled:active:bg-surface-muted disabled:cursor-not-allowed disabled:bg-disabled-surface disabled:text-disabled-ink; }
+  .store-nav-item { @apply inline-flex min-h-11 min-w-11 cursor-pointer items-center justify-center gap-1.5 rounded-control px-2.5 py-2 text-sm no-underline motion-safe:transition-colors hover:bg-accent-soft hover:text-on-accent-soft sm:px-3; }
+  .eyebrow { @apply text-xs font-semibold uppercase tracking-wider text-accent-ink; }
+  .display-title { @apply text-[1.75rem] leading-tight font-bold tracking-tight sm:text-4xl; }
+  .image-well {
+    @apply rounded-control bg-surface-muted;
+    background-image: linear-gradient(145deg, color-mix(in srgb, var(--shop-surface) 70%, transparent), transparent);
+  }
+  .summary-total { @apply flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 rounded-control bg-accent-soft px-4 py-3 text-base font-semibold text-on-accent-soft; }
+}

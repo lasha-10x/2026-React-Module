@@ -1,0 +1,15 @@
+// საერთო სტილები ორივე ვარიანტისთვის
+const baseStyles = [
+    'rounded-xl px-5 py-2.5 text-sm font-medium',
+    'transition duration-200',
+    'focus-ring',
+    'disabled:cursor-not-allowed disabled:opacity-50',
+].join(' ');
+const variantStyles = {
+    primary: 'bg-neutral-900 text-white hover:bg-neutral-700',
+    secondary: 'border border-neutral-300 bg-neutral-100 text-neutral-900 hover:bg-neutral-200',
+};
+const Button = ({ variant = 'primary', className = '', type = 'button', ...props }) => {
+    return (<button type={type} className={`${baseStyles} ${variantStyles[variant]} ${className}`} {...props}/>);
+};
+export default Button;

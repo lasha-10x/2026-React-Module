@@ -1,0 +1,47 @@
+@import "tailwindcss";
+
+/* Dark mode: <html class="dark"> ჩართვისას ვცვლით Tailwind-ის ფერების ცვლადებს.
+   თეთრი და neutral-ის შკალა ერთმანეთს ენაცვლება (50 <-> 950, 100 <-> 900 ...),
+   ამიტომ ყველა არსებული კლასი (bg-white, text-neutral-900 ...) ავტომატურად ბნელდება. */
+.dark {
+  color-scheme: dark;
+  --color-white: oklch(14.5% 0 0);
+  --color-neutral-50: oklch(14.5% 0 0);
+  --color-neutral-100: oklch(20.5% 0 0);
+  --color-neutral-200: oklch(26.9% 0 0);
+  --color-neutral-300: oklch(37.1% 0 0);
+  --color-neutral-400: oklch(43.9% 0 0);
+  --color-neutral-500: oklch(55.6% 0 0);
+  --color-neutral-600: oklch(70.8% 0 0);
+  --color-neutral-700: oklch(87% 0 0);
+  --color-neutral-800: oklch(92.2% 0 0);
+  --color-neutral-900: oklch(97% 0 0);
+  --color-neutral-950: oklch(98.5% 0 0);
+}
+
+@theme { 
+  --color-brand: oklch(55% 0.2 265);
+  --font-sans: 'Inter', system-ui, sans-serif;
+}
+
+@utility focus-ring {
+  &:focus-visible {
+    outline: 2px solid var(--color-brand);
+    outline-offset: 2px;
+  }
+}
+
+@utility input-field {
+  @apply w-full rounded-xl border border-neutral-300 px-4 py-2.5 transition duration-200 focus:border-neutral-900 focus:outline-none;
+  & option {
+    background-color: var(--color-white);
+    color: var(--color-neutral-900);
+  }
+}
+@utility catalog-control {
+  @apply rounded-full border border-transparent bg-neutral-100 px-4 py-2 text-sm transition duration-200 placeholder:text-neutral-400 focus:border-neutral-900 focus:bg-white focus:outline-none;
+  & option {
+    background-color: var(--color-white);
+    color: var(--color-neutral-900);
+  }
+}

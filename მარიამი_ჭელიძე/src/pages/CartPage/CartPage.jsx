@@ -1,0 +1,57 @@
+// კალათის შიგთავსს, რაოდენობის ლიმიტებსა და შეკვეთის შეჯამებას აჩვენებს.
+import { Link, useLocation } from "react-router";
+import { useCart } from "../../context/CartContext";
+import { useRealm } from "../../context/RealmContext";
+import { useInventory } from "../../context/InventoryContext";
+import { CartItemRow } from "./components/CartItemRow";
+import { CartSummary } from "./components/CartSummary";
+export function CartPage() {
+    const location = useLocation();
+    const routeState = location.state;
+    const redirectMessage = typeof routeState === "object" && routeState !== null &&
+        "message" in routeState && typeof routeState.message === "string"
+        ? routeState.message
+        : "";
+    const { items, subtotal, discount, total, promoCode, applyPromoCode, removePromoCode, removeItem, updateQuantity, clearCart } = useCart();
+    const { formatPrice } = useRealm();
+    const { getStock } = useInventory();
+    // სხვა ვარიანტებში არჩეული რაოდენობა საერთო მარაგიდან გამოირიცხება.
+    const getMaxQuantity = (item) => {
+        const otherVariantQuantity = items
+            .filter((entry) => entry.productId === item.productId && !(entry.size === item.size && entry.color === item.color))
+            .reduce((total, entry) => total + entry.quantity, 0);
+        return Math.max(0, getStock(item.productId, item.stock) - otherVariantQuantity);
+    };
+    if (items.length === 0) {
+        // ცარიელი კალათისთვის პროდუქტების დათვალიერების ბმულს ვაჩვენებთ.
+        return (<main className="mx-auto flex min-h-[60vh] max-w-7xl flex-col items-center justify-center px-4 py-16 text-center sm:px-6 lg:px-8">
+        <h1 className="font-display text-3xl text-market-ink">Your cart is empty</h1>
+        {redirectMessage && <p role="status" className="mt-3 text-sm text-market-muted">{redirectMessage}</p>}
+        <Link to="/" className="mt-6 inline-flex min-h-12 items-center bg-market-ink px-8 text-xs uppercase tracking-[0.14em] text-market-paper transition-colors hover:bg-market-muted focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-market-ink">
+          Browse products
+        </Link>
+      </main>);
+    }
+    return (<main className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
+      <h1 className="mb-8 border-b border-market-border pb-5 font-display text-3xl text-market-ink sm:mb-10 sm:text-4xl">
+        Your cart
+      </h1>
+      <div className="grid min-w-0 gap-10 lg:grid-cols-[minmax(0,1fr)_20rem] lg:gap-14">
+        <section className="min-w-0" aria-label="Cart items">
+          <ul className="divide-y divide-market-border">
+            {items.map((item) => (<CartItemRow key={`${item.productId}-${item.size ?? ""}-${item.color ?? ""}`} item={item} maxQuantity={getMaxQuantity(item)} formatPrice={formatPrice} onRemove={(current) => removeItem(current.productId, { size: current.size, color: current.color })} onQuantityChange={(current, quantity) => updateQuantity(current.productId, quantity, {
+                size: current.size,
+                color: current.color,
+            })}/>))}
+          </ul>
+          <button type="button" onClick={() => {
+            if (window.confirm("Clear the cart? This cannot be undone."))
+                clearCart();
+        }} className="mt-5 min-h-11 text-xs uppercase tracking-[0.12em] text-market-muted underline underline-offset-4 transition-colors hover:text-market-ink focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-market-ink">
+            Clear cart
+          </button>
+        </section>
+        <CartSummary subtotal={subtotal} discount={discount} total={total} promoCode={promoCode} onApplyPromoCode={applyPromoCode} onRemovePromoCode={removePromoCode} formatPrice={formatPrice}/>
+      </div>
+    </main>);
+}

@@ -1,0 +1,19 @@
+function QuantityPicker({ quantity, maxQuantity, onQuantityChange, }) {
+    return (<div className="flex flex-wrap items-center gap-3">
+      <button type="button" onClick={() => onQuantityChange(quantity - 1)} disabled={quantity <= 1} aria-label="რაოდენობის შემცირება" className="flex h-9 w-9 items-center justify-center rounded-lg border border-gray-300 text-lg font-semibold hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40">
+        −
+      </button>
+
+      <span aria-live="polite" className="min-w-6 text-center font-semibold">
+        {quantity}
+      </span>
+
+      <button type="button" onClick={() => onQuantityChange(quantity + 1)} disabled={quantity >= maxQuantity} aria-label="რაოდენობის გაზრდა" className="flex h-9 w-9 items-center justify-center rounded-lg border border-gray-300 text-lg font-semibold hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40">
+        +
+      </button>
+        {quantity >= maxQuantity && (<p className="w-full text-xs text-orange-600" role="status">
+            Maximum available quantity: {maxQuantity}
+          </p>)}
+    </div>);
+}
+export default QuantityPicker;

@@ -1,0 +1,45 @@
+// JSON from localStorage has no type, so every shape is verified instead of cast with "as".
+function isRecord(value) {
+    return typeof value === 'object' && value !== null;
+}
+export function isCartItem(value) {
+    return (isRecord(value) &&
+        typeof value.productId === 'number' &&
+        typeof value.title === 'string' &&
+        typeof value.thumbnail === 'string' &&
+        typeof value.price === 'number' &&
+        typeof value.discountPercentage === 'number' &&
+        typeof value.stock === 'number' &&
+        typeof value.quantity === 'number');
+}
+export function isCartState(value) {
+    return (isRecord(value) &&
+        Array.isArray(value.items) &&
+        value.items.every(isCartItem) &&
+        (value.promoCode === null || typeof value.promoCode === 'string'));
+}
+function isShippingInfo(value) {
+    return (isRecord(value) &&
+        typeof value.fullName === 'string' &&
+        typeof value.email === 'string' &&
+        typeof value.phone === 'string' &&
+        typeof value.address === 'string' &&
+        typeof value.city === 'string' &&
+        typeof value.postalCode === 'string' &&
+        typeof value.country === 'string');
+}
+function isOrderData(value) {
+    return (isRecord(value) &&
+        typeof value.id === 'number' &&
+        typeof value.number === 'string' &&
+        Array.isArray(value.items) &&
+        value.items.every(isCartItem) &&
+        isShippingInfo(value.shipping) &&
+        typeof value.subtotal === 'number' &&
+        typeof value.discount === 'number' &&
+        typeof value.total === 'number' &&
+        typeof value.placedAt === 'string');
+}
+export function isOrderDataArray(value) {
+    return Array.isArray(value) && value.every(isOrderData);
+}

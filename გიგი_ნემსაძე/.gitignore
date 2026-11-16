@@ -1,0 +1,43 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Local assignment files and scratch media, repo root only (app images in src/ and public/ must stay tracked)
+/prd.txt
+/appendix-a.txt
+/*.docx
+/*.jpg
+/*.webp
+
+# Logo design sources, not used by the app
+/.design-work/
+
+# Blender scenes and render scripts for the showcase images. The finished WebP files are in src/assets/showcase/.
+/blender/
+
+# Source footage and local tools. The finished hero file lives in public/.
+/.media/
+/.tools/
+/src/assets/ghvinola*
+~ai-*.tmp

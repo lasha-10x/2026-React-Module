@@ -1,0 +1,13 @@
+export function SectionPanel({ title, intro, children }) {
+    // სათაური და აღწერა საერთო ჩარჩოშია, ხოლო განსხვავებული შიგთავსი children-ით გადაეცემა.
+    return (<section className="w-full min-w-0 max-w-full" aria-labelledby="profile-section-title">
+      <p className="text-[10px] uppercase tracking-[0.18em] text-gold">
+        10X Shop · Account
+      </p>
+      <h2 id="profile-section-title" className="mt-3 border-b border-market-border pb-5 font-display text-2xl text-market-ink sm:text-3xl">
+        {title}
+      </h2>
+      <p className="mt-5 text-sm leading-6 text-market-muted">{intro}</p>
+      <div className="mt-7 w-full min-w-0 max-w-full">{children}</div>
+    </section>);
+}

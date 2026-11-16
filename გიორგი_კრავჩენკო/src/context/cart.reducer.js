@@ -1,0 +1,89 @@
+/** Keeps a quantity inside 1..stock (Annex A, P4.2). */
+function clampQuantity(quantity, stock) {
+    return Math.min(Math.max(Math.round(quantity), 1), Math.max(stock, 1));
+}
+/**
+ * The cart's only transition function (Annex A, P4.2).
+ *
+ * Pure: it reads nothing outside its arguments and writes nothing outside its
+ * return value. In particular it never touches localStorage - saving is a
+ * side effect and belongs in the provider's effect, not in the thing that
+ * decides what the next state is. That is what makes it replayable: the same
+ * state and action always give the same result, which the provider relies on
+ * to answer "how many units went in" before React has re-rendered.
+ */
+export function cartReducer(state, action) {
+    switch (action.type) {
+        case 'ADD_ITEM': {
+            const existing = state.items.find((item) => item.productId === action.product.id);
+            const alreadyInCart = existing?.quantity ?? 0;
+            // Never let the cart hold more than the shop has (P4.2, P3.3).
+            const room = action.product.stock - alreadyInCart;
+            const added = Math.max(Math.min(action.qty, room), 0);
+            if (added === 0)
+                return state;
+            if (existing !== undefined) {
+                return {
+                    ...state,
+                    // map() returns a new array and a new object for the changed line;
+                    // every other line keeps its identity.
+                    items: state.items.map((item) => item.productId === action.product.id
+                        ? { ...item, quantity: item.quantity + added }
+                        : item),
+                };
+            }
+            const line = {
+                productId: action.product.id,
+                title: action.product.title,
+                thumbnail: action.product.thumbnail,
+                price: action.product.price,
+                discountPercentage: action.product.discountPercentage,
+                stock: action.product.stock,
+                quantity: added,
+                category: action.product.category,
+            };
+            return { ...state, items: [...state.items, line] };
+        }
+        case 'SET_QTY': {
+            return {
+                ...state,
+                items: state.items.map((item) => item.productId === action.productId
+                    ? { ...item, quantity: clampQuantity(action.qty, item.stock) }
+                    : item),
+            };
+        }
+        case 'REMOVE_ITEM': {
+            return {
+                ...state,
+                items: state.items.filter((item) => item.productId !== action.productId),
+            };
+        }
+        case 'CLEAR': {
+            // The destination survives an emptied cart: where someone lives does
+            // not change because they checked out, and asking again on the next
+            // basket would be asking a question already answered.
+            return { items: [], promoCode: null, destination: state.destination };
+        }
+        case 'APPLY_PROMO': {
+            return { ...state, promoCode: action.code.trim().toUpperCase() };
+        }
+        case 'REMOVE_PROMO': {
+            return { ...state, promoCode: null };
+        }
+        case 'SET_DESTINATION': {
+            return { ...state, destination: action.city };
+        }
+        default: {
+            /*
+             * Every case above is handled, so by here `action` has narrowed to
+             * `never` and this assignment compiles. Add an eighth action without a
+             * case for it and this line stops compiling - which is the point: the
+             * compiler, not a test, is what notices the missing branch. It earned
+             * its keep when SET_DESTINATION was added: the build failed here until
+             * the case above was written.
+             */
+            const exhaustive = action;
+            return exhaustive;
+        }
+    }
+}

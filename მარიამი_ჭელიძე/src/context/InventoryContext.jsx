@@ -1,0 +1,58 @@
+// პროდუქტების მარაგს ინახავს და შეკვეთისას რაოდენობას ამცირებს.
+import { createContext, useCallback, useContext, useState } from "react";
+const INVENTORY_KEY = "middle-market-inventory";
+const InventoryContext = createContext(undefined);
+function readSavedInventory() {
+    // შენახულ მარაგში მხოლოდ ნულის ან მეტი მთელი რიცხვის მნიშვნელობებს ვიღებთ.
+    try {
+        const saved = JSON.parse(localStorage.getItem(INVENTORY_KEY) ?? "{}");
+        if (typeof saved !== "object" || saved === null || Array.isArray(saved))
+            return {};
+        return Object.fromEntries(Object.entries(saved).filter(([, stock]) => typeof stock === "number" && Number.isInteger(stock) && stock >= 0));
+    }
+    catch {
+        return {};
+    }
+}
+export function InventoryProvider({ children }) {
+    const [stockByProductId, setStockByProductId] = useState(readSavedInventory);
+    const getStock = useCallback((productId, fallbackStock) => stockByProductId[String(productId)] ?? fallbackStock, [stockByProductId]);
+    const decrementStock = useCallback((items) => {
+        if (items.length === 0)
+            return;
+        // ერთი პროდუქტისთვის შეკვეთილი ზომებისა და ფერების რაოდენობებს წინასწარ ვაჯამებთ.
+        const purchases = new Map();
+        for (const item of items) {
+            const current = purchases.get(item.productId);
+            purchases.set(item.productId, {
+                quantity: (current?.quantity ?? 0) + item.quantity,
+                originalStock: current?.originalStock ?? item.stock,
+            });
+        }
+        setStockByProductId((current) => {
+            const next = { ...current };
+            for (const [productId, purchase] of purchases) {
+                const key = String(productId);
+                const availableStock = current[key] ?? purchase.originalStock;
+                next[key] = Math.max(0, availableStock - purchase.quantity);
+            }
+            try {
+                localStorage.setItem(INVENTORY_KEY, JSON.stringify(next));
+            }
+            catch {
+                // ბრაუზერის საცავი მიუწვდომელიც რომ იყოს, მარაგი მიმდინარე სესიაში განახლდება.
+            }
+            return next;
+        });
+    }, []);
+    return (<InventoryContext.Provider value={{ getStock, decrementStock }}>
+      {children}
+    </InventoryContext.Provider>);
+}
+export function useInventory() {
+    const context = useContext(InventoryContext);
+    if (context === undefined) {
+        throw new Error("useInventory must be used within an InventoryProvider.");
+    }
+    return context;
+}

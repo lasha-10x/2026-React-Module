@@ -1,0 +1,36 @@
+<!doctype html>
+<!-- NOTE: the one real HTML page of this single-page app. React fills #root, and React Router swaps
+     what is inside it without ever reloading the page. -->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="10X Shop: an online store built as a vending machine. Open all night." />
+    <meta name="theme-color" content="#0e121b" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <!-- NOTE: opens the connections to the API and the image server early, which saves the handshake on slow
+         networks. `crossorigin` is on the API's link because fetch uses a separate kind of connection from images.
+         Without it, the browser would open this one and then not be able to use it. The two fonts are the ones visible
+         straight away: the wordmark and the reading text. Without the preload, the browser only finds them once the
+         CSS has loaded. -->
+    <link rel="preconnect" href="https://dummyjson.com" crossorigin />
+    <link rel="preconnect" href="https://cdn.dummyjson.com" />
+    <link rel="preload" href="/fonts/tilt-neon.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/instrument-sans.woff2" as="font" type="font/woff2" crossorigin />
+    <title>10X Shop</title>
+    <!-- NOTE: applies the saved theme before anything is drawn. React loads later, so without this a light theme
+         visitor would see a flash of the dark theme on every page load. Blocked storage just means dark. -->
+    <script>
+      let isLight = false;
+      try {
+        isLight = localStorage.getItem("shop_theme") === '"light"';
+      } catch {}
+      document.documentElement.dataset.theme = isLight ? "light" : "dark";
+      if (isLight) document.querySelector('meta[name="theme-color"]').content = "#fafaf6";
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

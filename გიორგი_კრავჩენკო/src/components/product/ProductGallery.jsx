@@ -1,0 +1,38 @@
+import { useState } from 'react';
+/**
+ * The product image gallery (Annex A, P3).
+ *
+ * Which picture is shown is local component state: nothing outside this
+ * component needs to know, so it does not belong in Context.
+ *
+ * The selection resets when the route moves to another product because
+ * ProductPage keys its ProductDetails by the product id, remounting this
+ * component along with it.
+ */
+export default function ProductGallery({ images, thumbnail, title }) {
+    // Some catalogue entries have no gallery, so fall back to the thumbnail.
+    const gallery = images.length > 0 ? images : [thumbnail];
+    const [activeImage, setActiveImage] = useState(gallery[0]);
+    return (<div>
+      <div className="aspect-square overflow-hidden rounded-lg border border-line bg-surface p-6">
+        <img src={activeImage} alt={title} width={800} height={800} className="h-full w-full object-contain"/>
+      </div>
+
+      {gallery.length > 1 ? (<ul className="mt-3 flex flex-wrap gap-3">
+          {gallery.map((image) => {
+                const isActive = image === activeImage;
+                return (<li key={image}>
+                <button type="button" onClick={() => setActiveImage(image)} aria-pressed={isActive} className={[
+                        'h-20 w-20 overflow-hidden rounded-md border bg-surface p-1 transition-colors',
+                        'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink',
+                        isActive
+                            ? 'border-ink'
+                            : 'border-line hover:border-ink',
+                    ].join(' ')}>
+                  <img src={image} alt={`${title} thumbnail`} width={80} height={80} loading="lazy" className="h-full w-full object-contain"/>
+                </button>
+              </li>);
+            })}
+        </ul>) : null}
+    </div>);
+}

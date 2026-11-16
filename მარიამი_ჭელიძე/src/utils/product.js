@@ -1,0 +1,19 @@
+// ფასდაკლებულ ფასს, ხაზის ჯამსა და მარაგის სტატუსს ითვლის.
+export function discountedPrice(price, discountPercentage) {
+    // ფასი პროცენტული ფასდაკლების შემდეგ ორ ათწილადამდე მრგვალდება.
+    return Number((price * (1 - discountPercentage / 100)).toFixed(2));
+}
+export function lineTotal(price, discountPercentage, quantity) {
+    // ერთეულის ფასდაკლებული ფასის რაოდენობაზე გამრავლებით ხაზის ჯამს ვიღებთ.
+    return discountedPrice(price, discountPercentage) * quantity;
+}
+export function getStockStatus(stock) {
+    // შეტყობინების ტექსტი და ფერი მარაგის რაოდენობის მიხედვით განისაზღვრება.
+    if (stock <= 0) {
+        return { message: "Out of stock", className: "text-blood" };
+    }
+    if (stock <= 5) {
+        return { message: `Only ${stock} left!`, className: "text-gold" };
+    }
+    return { message: "In stock", className: "text-market-muted" };
+}

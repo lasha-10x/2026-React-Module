@@ -1,0 +1,19 @@
+export function validateLogin(values) { const e = {}; if (!values.username.trim())
+    e.username = 'Username is required'; if (!values.password)
+    e.password = 'Password is required';
+else if (values.password.length < 6)
+    e.password = 'Password must be at least 6 characters'; return e; }
+export function validateCheckout(values) { const e = {}; if (values.fullName.trim().length < 3)
+    e.fullName = 'Full name must be at least 3 characters'; if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email))
+    e.email = 'Please enter a valid email address'; if (values.address.trim().length < 5)
+    e.address = 'Address must be at least 5 characters'; if (!values.city.trim())
+    e.city = 'City is required'; return e; }
+export function validateProfile(values) { const e = {}; if (values.firstName.trim().length < 2)
+    e.firstName = 'First name must be at least 2 characters'; if (values.lastName.trim().length < 2)
+    e.lastName = 'Last name must be at least 2 characters'; if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email))
+    e.email = 'Please enter a valid email address'; if (values.phone && !/^\+?[\d\s()-]{7,}$/.test(values.phone))
+    e.phone = 'Please enter a valid phone number'; return e; }
+export function validateSignup(values) { const e = {}; if (values.fullName.trim().length < 3)
+    e.fullName = 'Full name must be at least 3 characters'; if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email))
+    e.email = 'Please enter a valid email address'; if (values.password.length < 6)
+    e.password = 'Password must be at least 6 characters'; return e; }

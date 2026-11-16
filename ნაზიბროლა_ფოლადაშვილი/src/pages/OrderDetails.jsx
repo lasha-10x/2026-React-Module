@@ -1,0 +1,255 @@
+import { useEffect, useState } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { useAuth } from "../context/useAuth";
+import { useCart } from "../context/useCart";
+import { useOrders } from "../context/useOrders";
+import { getOrderStatus } from "../utils/orderStatus";
+import { formatPrice } from "../utils/price";
+import NotFound from "./NotFound";
+const statusSteps = [
+    "Processing",
+    "Shipped",
+    "Delivered",
+];
+export default function OrderDetails() {
+    const { id } = useParams();
+    const { username } = useAuth();
+    const { orders } = useOrders();
+    const { addToCart } = useCart();
+    const navigate = useNavigate();
+    const [currentTime, setCurrentTime] = useState(() => Date.now());
+    useEffect(() => {
+        const intervalId = window.setInterval(() => {
+            setCurrentTime(Date.now());
+        }, 30_000);
+        return () => {
+            window.clearInterval(intervalId);
+        };
+    }, []);
+    const order = orders.find((item) => item.id === id && item.userId === username);
+    function handleReorder() {
+        const currentOrder = orders.find((item) => item.id === id && item.userId === username);
+        if (!currentOrder) {
+            return;
+        }
+        currentOrder.items.forEach((item) => {
+            addToCart(item.product, item.quantity);
+        });
+        navigate("/cart");
+    }
+    if (!order) {
+        return <NotFound />;
+    }
+    const status = getOrderStatus(order.createdAt, currentTime);
+    const currentStepIndex = statusSteps.indexOf(status);
+    // Older orders may not have a saved price breakdown.
+    const hasPriceBreakdown = typeof order.subtotal === "number" &&
+        Number.isFinite(order.subtotal) &&
+        typeof order.shippingCost === "number" &&
+        Number.isFinite(order.shippingCost);
+    const savedDiscount = typeof order.discount === "number" &&
+        Number.isFinite(order.discount)
+        ? order.discount
+        : 0;
+    return (<main className="mx-auto max-w-4xl px-6 py-12">
+            <Link to="/orders" className="mb-6 inline-block font-semibold text-indigo-600 hover:underline dark:text-indigo-400">
+                Back to My Orders
+            </Link>
+
+            <h1 className="mb-4 text-3xl font-bold text-slate-900 dark:text-white">
+                Order #{order.number ?? order.id.slice(0, 8)}
+            </h1>
+
+            <p className="mb-8 text-slate-600 dark:text-slate-300">
+                Placed on {new Date(order.createdAt).toLocaleString()}
+            </p>
+
+            <section className="mb-6 rounded-xl border border-slate-200 bg-white p-6 text-slate-900 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100">
+                <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+                    <h2 className="text-xl font-semibold text-slate-900 dark:text-white">
+                        Order Status
+                    </h2>
+
+                    <span className="rounded-full bg-indigo-100 px-4 py-2 text-sm font-semibold text-indigo-700 dark:bg-indigo-900 dark:text-indigo-200">
+                        {status}
+                    </span>
+                </div>
+
+                <ol className="grid grid-cols-3 gap-2">
+                    {statusSteps.map((step, index) => {
+            const isCompleted = index <= currentStepIndex;
+            return (<li key={step} className="flex flex-col items-center gap-3 text-center" aria-current={index === currentStepIndex
+                    ? "step"
+                    : undefined}>
+                                <div className={`flex h-10 w-10 items-center justify-center rounded-full font-bold ${isCompleted
+                    ? "bg-green-600 text-white"
+                    : "bg-slate-200 text-slate-500 dark:bg-slate-700 dark:text-slate-300"}`}>
+                                    {isCompleted ? "✓" : index + 1}
+                                </div>
+
+                                <span className={`text-sm font-medium ${isCompleted
+                    ? "text-green-700 dark:text-green-400"
+                    : "text-slate-500 dark:text-slate-400"}`}>
+                                    {step}
+                                </span>
+                            </li>);
+        })}
+                </ol>
+
+                <p className="mt-6 text-center text-sm text-slate-600 dark:text-slate-300">
+                    Current status: {status}
+                </p>
+            </section>
+
+            <section className="mb-6 rounded-xl border border-slate-200 bg-white p-6 text-slate-900 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100">
+                <h2 className="mb-6 text-xl font-semibold text-slate-900 dark:text-white">
+                    Order Items
+                </h2>
+
+                <ul className="divide-y divide-slate-200 dark:divide-slate-700">
+                    {order.items.map((item) => {
+            const unitPrice = item.unitPrice ?? item.product.price;
+            const lineTotal = Math.round((unitPrice * item.quantity +
+                Number.EPSILON) * 100) / 100;
+            return (<li key={item.product.id} className="flex flex-wrap items-center justify-between gap-4 py-4">
+                                <div>
+                                    <h3 className="font-semibold text-slate-900 dark:text-white">
+                                        {item.product.title}
+                                    </h3>
+
+                                    <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+                                        Quantity: {item.quantity}
+                                    </p>
+
+                                    <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+                                        Unit price: {formatPrice(unitPrice)}
+                                    </p>
+                                </div>
+
+                                <p className="font-semibold text-slate-900 dark:text-white">
+                                    {formatPrice(lineTotal)}
+                                </p>
+                            </li>);
+        })}
+                </ul>
+
+                <div className="mt-4 border-t border-slate-200 pt-5 dark:border-slate-700">
+                    <div className="flex items-center justify-between gap-4">
+                        <span className="text-slate-600 dark:text-slate-300">
+                            Total items
+                        </span>
+
+                        <span className="font-semibold text-slate-900 dark:text-white">
+                            {order.totalItems}
+                        </span>
+                    </div>
+
+                    {hasPriceBreakdown && (<div className="mt-5 space-y-3">
+                            <div className="flex items-center justify-between gap-4">
+                                <span className="text-slate-600 dark:text-slate-300">
+                                    Subtotal
+                                </span>
+
+                                <span className="font-medium text-slate-900 dark:text-white">
+                                    {formatPrice(order.subtotal)}
+                                </span>
+                            </div>
+
+                            {savedDiscount > 0 && (<div className="flex items-center justify-between gap-4">
+                                    <span className="text-green-700 dark:text-green-400">
+                                        Discount
+                                    </span>
+
+                                    <span className="font-medium text-green-700 dark:text-green-400">
+                                        -{formatPrice(savedDiscount)}
+                                    </span>
+                                </div>)}
+
+                            <div className="flex items-center justify-between gap-4">
+                                <span className="text-slate-600 dark:text-slate-300">
+                                    Shipping
+                                </span>
+
+                                <span className="font-medium text-slate-900 dark:text-white">
+                                    {order.shippingCost === 0
+                ? "Free"
+                : formatPrice(order.shippingCost)}
+                                </span>
+                            </div>
+                        </div>)}
+
+                    <div className="mt-5 flex items-center justify-between gap-4 border-t border-slate-200 pt-4 dark:border-slate-700">
+                        <span className="text-lg font-semibold text-slate-900 dark:text-white">
+                            Order Total
+                        </span>
+
+                        <span className="text-2xl font-bold text-indigo-700 dark:text-indigo-400">
+                            {formatPrice(order.totalPrice)}
+                        </span>
+                    </div>
+                </div>
+            </section>
+
+            <section className="mb-6 rounded-xl border border-slate-200 bg-white p-6 text-slate-900 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100">
+                <h2 className="mb-6 text-xl font-semibold text-slate-900 dark:text-white">
+                    Shipping Information
+                </h2>
+
+                <dl className="space-y-4">
+                    <div>
+                        <dt className="text-sm font-medium text-slate-500 dark:text-slate-400">
+                            Full Name
+                        </dt>
+
+                        <dd className="mt-1 text-slate-900 dark:text-white">
+                            {order.shippingInformation.fullName}
+                        </dd>
+                    </div>
+
+                    <div>
+                        <dt className="text-sm font-medium text-slate-500 dark:text-slate-400">
+                            Email
+                        </dt>
+
+                        <dd className="mt-1 wrap-break-word text-slate-900 dark:text-white">
+                            {order.shippingInformation.email}
+                        </dd>
+                    </div>
+
+                    <div>
+                        <dt className="text-sm font-medium text-slate-500 dark:text-slate-400">
+                            Address
+                        </dt>
+
+                        <dd className="mt-1 text-slate-900 dark:text-white">
+                            {order.shippingInformation.address}
+                        </dd>
+                    </div>
+
+                    <div>
+                        <dt className="text-sm font-medium text-slate-500 dark:text-slate-400">
+                            City
+                        </dt>
+
+                        <dd className="mt-1 text-slate-900 dark:text-white">
+                            {order.shippingInformation.city}
+                        </dd>
+                    </div>
+
+                    <div>
+                        <dt className="text-sm font-medium text-slate-500 dark:text-slate-400">
+                            Postal Code
+                        </dt>
+
+                        <dd className="mt-1 text-slate-900 dark:text-white">
+                            {order.shippingInformation.postalCode}
+                        </dd>
+                    </div>
+                </dl>
+            </section>
+
+            <button type="button" onClick={handleReorder} className="rounded-lg bg-indigo-600 px-6 py-3 font-semibold text-white hover:bg-indigo-700">
+                Reorder
+            </button>
+        </main>);
+}

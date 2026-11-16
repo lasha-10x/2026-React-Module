@@ -1,0 +1,19 @@
+{
+  "name": "10X Shop",
+  "description": "Demo online store: product catalog, search, wishlist, compare, cart and simulated checkout.",
+  "url": "https://10x-shop-gurami.netlify.app/",
+  "repository": "https://github.com/GuramAbramishvili/10x-shop-gurami",
+  "resources": [
+    {
+      "type": "documentation",
+      "name": "llms.txt",
+      "url": "https://10x-shop-gurami.netlify.app/llms.txt",
+      "mediaType": "text/markdown"
+    },
+    {
+      "type": "website",
+      "name": "Catalog",
+      "url": "https://10x-shop-gurami.netlify.app/"
+    }
+  ]
+}

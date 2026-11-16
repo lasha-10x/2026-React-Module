@@ -1,0 +1,46 @@
+function getPageTokens(page, totalPages) {
+    // ბევრი გვერდის დროს ნავიგაციაში მხოლოდ დასაწყისს, ახლო გვერდებსა და ბოლოს ვაჩვენებთ.
+    if (totalPages <= 5) {
+        return Array.from({ length: totalPages }, (_, index) => index + 1);
+    }
+    const firstVisible = Math.max(2, page - 1);
+    const lastVisible = Math.min(totalPages - 1, page + 1);
+    const tokens = [1];
+    if (firstVisible > 2) {
+        tokens.push("start-ellipsis");
+    }
+    for (let current = firstVisible; current <= lastVisible; current += 1) {
+        tokens.push(current);
+    }
+    if (lastVisible < totalPages - 1) {
+        tokens.push("end-ellipsis");
+    }
+    tokens.push(totalPages);
+    return tokens;
+}
+export function Pagination({ page, totalPages, onChange }) {
+    // მხოლოდ ერთი გვერდისას გვერდების ნავიგაციას არ ვაჩვენებთ.
+    if (totalPages <= 1) {
+        return null;
+    }
+    const tokens = getPageTokens(page, totalPages);
+    const buttonClass = "inline-flex min-h-11 min-w-11 items-center justify-center text-xs text-market-muted transition-colors hover:text-market-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-market-ink disabled:cursor-not-allowed disabled:text-market-border";
+    return (<nav aria-label="Catalog pages" className="mt-10 flex flex-wrap items-center justify-center gap-1 sm:mt-14 sm:gap-2">
+      <button type="button" aria-label="Previous page" disabled={page <= 1} onClick={() => onChange(page - 1)} className={buttonClass}>
+        Previous
+      </button>
+      {tokens.map((token) => {
+            if (typeof token !== "number") {
+                return (<span key={token} aria-hidden="true" className="inline-flex min-h-10 min-w-5 items-center justify-center text-market-muted">
+              …
+            </span>);
+            }
+            return (<button key={token} type="button" aria-label={`Page ${token}`} aria-current={page === token ? "page" : undefined} onClick={() => onChange(token)} className={`${buttonClass} ${page === token ? "bg-market-ink text-market-paper hover:text-market-paper" : ""}`}>
+            {token}
+          </button>);
+        })}
+      <button type="button" aria-label="Next page" disabled={page >= totalPages} onClick={() => onChange(page + 1)} className={buttonClass}>
+        Next
+      </button>
+    </nav>);
+}

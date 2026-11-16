@@ -1,0 +1,37 @@
+import { Check } from "lucide-react";
+import { ORDER_STEPS, STATUS_COLORS } from "./orderStatus";
+import { formatDateTime } from "../../utils/date";
+const CURRENT_NOTES = {
+    Processing: "packing it up!",
+    Shipped: "on its way!",
+    Delivered: "enjoy! ✶",
+};
+export default function StatusTimeline({ order, now }) {
+    const currentIndex = ORDER_STEPS.indexOf(order.getStatus(now));
+    const placedAt = formatDateTime(order.createdAt);
+    return (<section aria-label="Order status" className="bg-card rounded-card shadow-card px-5 md:px-8 py-7">
+      <ol className="grid grid-cols-3 gap-4">
+        {ORDER_STEPS.map((step, index) => {
+            const isReached = index <= currentIndex;
+            const isCurrent = index === currentIndex;
+            let caption;
+            if (isCurrent) {
+                caption = <span className="font-note text-2xl text-accent">{CURRENT_NOTES[step]}</span>;
+            }
+            else if (index === 0) {
+                caption = <span className="font-mono text-[13px]">{placedAt}</span>;
+            }
+            else {
+                caption = <span className="text-sm font-semibold">{isReached ? "Done" : "Expected shortly"}</span>;
+            }
+            return (<li key={step} aria-current={isCurrent ? "step" : undefined} className="flex flex-col items-start gap-2.5">
+              {isReached ? (<span className={`w-14 h-14 rounded-full border-4 border-sticker grid place-items-center shadow-soft ${STATUS_COLORS[step]} ${isCurrent ? "ring-[3px] ring-ink dark:ring-cream -rotate-8" : ""}`}>
+                  <Check size={18} strokeWidth={2.8}/>
+                </span>) : (<span className="w-14 h-14 rounded-full border-[3px] border-dashed border-ink"/>)}
+              <strong className="text-lg font-extrabold">{step}</strong>
+              {caption}
+            </li>);
+        })}
+      </ol>
+    </section>);
+}

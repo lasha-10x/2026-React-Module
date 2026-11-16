@@ -1,0 +1,44 @@
+import { Form, Formik } from "formik";
+import useAuth from "../../hooks/useAuth";
+import { profileSchema } from "../auth/authSchemas";
+import FormField from "../auth/FormField";
+export default function ProfileForm({ user }) {
+    const { updateProfile } = useAuth();
+    // the account stores one name; the form edits it as first and last name
+    const [firstName = "", ...rest] = user.name.trim().split(/\s+/);
+    const initialValues = { firstName, lastName: rest.join(" "), email: user.email, phone: user.phone ?? "" };
+    function handleSubmit(values, { resetForm, setFieldError }) {
+        const cleaned = {
+            firstName: values.firstName.trim(),
+            lastName: values.lastName.trim(),
+            email: values.email.trim().toLowerCase(),
+            phone: values.phone?.trim() ?? "",
+        };
+        try {
+            updateProfile({ name: `${cleaned.firstName} ${cleaned.lastName}`, email: cleaned.email, phone: cleaned.phone });
+            resetForm({ values: cleaned, status: "saved" });
+        }
+        catch (error) {
+            setFieldError("email", error instanceof Error ? error.message : "Could not save changes");
+        }
+    }
+    return (<Formik initialValues={initialValues} validationSchema={profileSchema} onSubmit={handleSubmit}>
+      {({ dirty, status }) => (<Form noValidate className="p-6 md:p-8 flex flex-col gap-5.5 bg-card rounded-card shadow-card">
+          <h2 className="font-display text-2xl md:text-[28px] leading-tight">Personal details</h2>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4.5">
+            <FormField name="firstName" label="First name" autoComplete="given-name"/>
+            <FormField name="lastName" label="Last name" autoComplete="family-name"/>
+            <FormField name="email" label="Email" type="email" autoComplete="email"/>
+            <FormField name="phone" label="Phone (optional)" type="tel" autoComplete="tel"/>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-4">
+            <button type="submit" disabled={!dirty} className="h-14 px-7 rounded-full bg-coal text-white text-[17px] font-extrabold transition enabled:hover:bg-blue disabled:bg-muted disabled:text-muted-ink disabled:cursor-not-allowed">
+              Save changes
+            </button>
+            {status === "saved" && !dirty && (<p role="status" className="font-note text-2xl text-accent">saved! ✶</p>)}
+          </div>
+        </Form>)}
+    </Formik>);
+}

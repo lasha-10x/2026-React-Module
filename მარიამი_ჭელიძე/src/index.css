@@ -1,0 +1,128 @@
+@import "tailwindcss";
+
+@font-face {
+  font-family: "Cinzel";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url("/fonts/cinzel-latin.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Lora";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url("/fonts/lora-latin.woff2") format("woff2");
+}
+
+/* სინათლისა და სიბნელის თემების ფერები, შრიფტები და საერთო სტილებია აღწერილი. */
+
+@theme inline {
+  /* Tailwind utility კლასებს ცვალებად theme ცვლადებთან ვაკავშირებთ. */
+  --color-market-ink: var(--text-primary);
+  --color-market-paper: var(--bg-primary);
+  --color-market-muted: var(--text-muted);
+  --color-market-surface: var(--bg-secondary);
+  --color-market-border: var(--color-border);
+  --color-leaf: var(--accent-leaf);
+  --color-forest: var(--accent-forest);
+  --color-earth: var(--accent-earth);
+  --color-gold: var(--accent-gold);
+  --color-blood: var(--accent-blood);
+  --color-lava: var(--accent-lava);
+  --color-accent: var(--accent-primary);
+  --color-error: var(--accent-danger);
+  --font-display: var(--font-cinzel);
+  --font-sans: var(--font-lora);
+}
+
+@utility bg-primary {
+  background-color: var(--bg-primary);
+}
+
+@utility bg-secondary {
+  background-color: var(--bg-secondary);
+}
+
+@utility text-primary {
+  color: var(--text-primary);
+}
+
+@utility text-muted {
+  color: var(--text-muted);
+}
+
+@utility border-border {
+  border-color: var(--color-border);
+}
+
+:root {
+  /* Light mode -The Shire colors*/
+  color-scheme: light;
+  --bg-primary: #f7f3e9;
+  --bg-secondary: #dbc9a4;
+  --text-primary: #1a1a1a;
+  --text-muted: #66543b;
+  --color-border: #c9b58c;
+  --accent-leaf: #7a8f5b;
+  --accent-forest: #3e5b3c;
+  --accent-earth: #8b6f47;
+  --accent-gold: #c9a96a;
+  --accent-blood: #8b1e1e;
+  --accent-lava: #ff6b1a;
+  --accent-primary: var(--accent-forest);
+  --accent-danger: #8b1e1e;
+  --qr-foreground: #3e5b3c;
+  --qr-background: #f7f3e9;
+  --font-cinzel: "Cinzel", "Cormorant Garamond", Georgia, serif;
+  --font-lora: "Lora", Georgia, serif;
+
+  font-family: var(--font-lora);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  color: var(--text-primary);
+  background: var(--bg-primary);
+}
+
+:root.dark,
+.dark {
+  /* Dark mode - the Mordor theme*/
+  color-scheme: dark;
+  --bg-primary: #0b0b0b;
+  --bg-secondary: #1a1a1a;
+  --text-primary: #f3eee3;
+  --text-muted: #c0b9ad;
+  --color-border: #2e2e2e;
+  --accent-leaf: #7a8f5b;
+  --accent-forest: #3e5b3c;
+  --accent-earth: #8b6f47;
+  --accent-gold: #c9a96a;
+  --accent-blood: #8b1e1e;
+  --accent-lava: #ff6b1a;
+  --accent-primary: var(--accent-blood);
+  --accent-danger: #ff6b1a;
+  --qr-foreground: #c9a96a;
+  --qr-background: #1a1a1a;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+  color: var(--text-primary);
+  background: var(--bg-primary);
+  transition: color 180ms ease, background-color 180ms ease;
+}
+
+select,
+select option {
+  color: var(--text-primary);
+  background-color: var(--bg-primary);
+  color-scheme: inherit;
+}
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(0.75rem); }
+  to { opacity: 1; transform: translateY(0); }
+}

@@ -1,0 +1,31 @@
+const BASE_URL = 'https://dummyjson.com';
+export async function fetchProducts(limit = 12, skip = 0) {
+    const response = await fetch(`${BASE_URL}/products?limit=${limit}&skip=${skip}`);
+    if (!response.ok) {
+        throw new Error(`Failed to load products (status ${response.status})`);
+    }
+    return (await response.json());
+}
+export async function fetchCategories() {
+    const response = await fetch(`${BASE_URL}/products/categories`);
+    if (!response.ok) {
+        throw new Error(`Failed to load categories (status ${response.status})`);
+    }
+    return (await response.json());
+}
+export async function fetchProductsByCategory(categorySlug, limit = 12, skip = 0) {
+    const response = await fetch(`${BASE_URL}/products/category/${categorySlug}?limit=${limit}&skip=${skip}`);
+    if (!response.ok) {
+        throw new Error(`Failed to load category products (status ${response.status})`);
+    }
+    return (await response.json());
+}
+export async function fetchProductById(id) {
+    const response = await fetch(`${BASE_URL}/products/${id}`);
+    if (response.status === 404)
+        return null;
+    if (!response.ok) {
+        throw new Error(`Failed to load product (status ${response.status})`);
+    }
+    return (await response.json());
+}

@@ -1,0 +1,53 @@
+import { isCartState } from "../../utils/guards";
+import { StorageService } from "../../models/StorageService";
+import { STORAGE_KEYS } from "../../utils/storageKeys";
+export const initialCartState = { items: [], promoCode: null };
+export const cartStorage = new StorageService(STORAGE_KEYS.cart, isCartState);
+function clamp(quantity, stock) {
+    return Math.min(Math.max(quantity, 1), stock);
+}
+export function cartReducer(state, action) {
+    switch (action.type) {
+        case "add": {
+            const { product, quantity } = action;
+            const existing = state.items.find((item) => item.id === product.id);
+            if (existing) {
+                return {
+                    ...state,
+                    items: state.items.map((item) => item.id === product.id ? { ...item, quantity: clamp(item.quantity + quantity, item.stock) } : item),
+                };
+            }
+            const newItem = {
+                id: product.id,
+                title: product.title,
+                thumbnail: product.thumbnail,
+                price: product.price,
+                discountPercentage: product.discountPercentage,
+                stock: product.stock,
+                quantity: clamp(quantity, product.stock),
+            };
+            return { ...state, items: [...state.items, newItem] };
+        }
+        case "remove":
+            return { ...state, items: state.items.filter((item) => item.id !== action.id) };
+        case "setQuantity":
+            return {
+                ...state,
+                items: state.items.map((item) => item.id === action.id ? { ...item, quantity: clamp(action.quantity, item.stock) } : item),
+            };
+        case "clear":
+            return initialCartState;
+        case "applyPromo":
+            return { ...state, promoCode: action.code };
+        case "removePromo":
+            return { ...state, promoCode: null };
+        default: {
+            // a new action type that is not handled above makes this line a type error
+            const unhandled = action;
+            throw new Error(`Unhandled cart action: ${JSON.stringify(unhandled)}`);
+        }
+    }
+}
+export function loadCart() {
+    return cartStorage.get() ?? initialCartState;
+}

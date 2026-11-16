@@ -1,0 +1,83 @@
+// პროდუქტის ფასს, მარაგს, რაოდენობას და კალათაში დამატებას აჩვენებს.
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { useCart } from "../../../context/CartContext";
+import { useInventory } from "../../../context/InventoryContext";
+import { useRealm } from "../../../context/RealmContext";
+import { discountedPrice, getStockStatus } from "../../../utils/product";
+import { StockAlertModal } from "../../../components/StockAlert/StockAlertModal";
+export function ProductInfoPanel({ product }) {
+    const [quantity, setQuantity] = useState(1);
+    const [cartMessage, setCartMessage] = useState(null);
+    const [isStockAlertOpen, setIsStockAlertOpen] = useState(false);
+    const { addItem, items } = useCart();
+    const { formatPrice } = useRealm();
+    const { getStock } = useInventory();
+    const stock = getStock(product.id, product.stock);
+    const quantityInCart = items
+        .filter((item) => item.productId === product.id)
+        .reduce((total, item) => total + item.quantity, 0);
+    const remainingStock = Math.max(0, stock - quantityInCart);
+    const price = discountedPrice(product.price, product.discountPercentage);
+    const stockStatus = getStockStatus(stock);
+    useEffect(() => {
+        // სხვა პროდუქტზე გადასვლისას წინა რაოდენობასა და შეტყობინებას ვასუფთავებთ.
+        setQuantity(1);
+        setCartMessage(null);
+    }, [product.id]);
+    const handleAddToCart = () => {
+        // კალათის კონტექსტი საერთო მარაგის ზღვარს ამოწმებს.
+        const added = addItem(product, quantity);
+        setCartMessage(added ? "Added to cart." : "All available stock is already in your bag.");
+    };
+    return (<section className="flex flex-col items-start py-2 md:py-8">
+      <div className="flex min-h-11 flex-wrap items-center gap-x-3 text-xs uppercase tracking-[0.16em] text-market-muted">
+        <Link to={`/?category=${encodeURIComponent(product.category)}&page=1`} aria-label={`Browse products in ${product.category}`} className="inline-flex min-h-11 items-center underline underline-offset-4 transition-colors hover:text-market-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold">
+          {product.category}
+        </Link>
+        {product.brand && (<span className="inline-flex min-h-11 items-center" aria-label={`Brand: ${product.brand}`}>
+            <span aria-hidden="true" className="mr-3 text-market-border">·</span>
+            {product.brand}
+          </span>)}
+      </div>
+      <h1 className="mt-3 font-display text-3xl text-market-ink sm:text-4xl">{product.title}</h1>
+      <div className="mt-5 flex flex-wrap items-center gap-3">
+        <p className="text-base text-market-ink">{formatPrice(price)}</p>
+        {product.discountPercentage > 0 && (<>
+            <p className="text-sm text-market-muted line-through">{formatPrice(product.price)}</p>
+            <span className="text-xs text-market-muted">−{Math.round(product.discountPercentage)}%</span>
+          </>)}
+      </div>
+      <div className="mt-4 flex flex-wrap items-center gap-4 text-sm">
+        <span className="text-market-ink" aria-label={`Rated ${product.rating} out of 5`}>
+          ★ {product.rating.toFixed(1)} · {product.reviews.length} {product.reviews.length === 1 ? "review" : "reviews"}
+        </span>
+        <span className={stockStatus.className}>{stockStatus.message}</span>
+      </div>
+      <div className="mt-8 flex min-h-12 items-center border border-market-border">
+        <button type="button" aria-label="Decrease quantity" disabled={quantity <= 1 || stock === 0} onClick={() => setQuantity((current) => Math.max(1, current - 1))} className="min-h-12 min-w-12 text-lg text-market-ink disabled:text-market-border">
+          −
+        </button>
+        <label className="sr-only" htmlFor="product-quantity">Quantity</label>
+        <input id="product-quantity" type="number" min={1} max={product.stock} step={1} inputMode="numeric" value={quantity} aria-invalid={quantity > remainingStock} aria-describedby={quantity > remainingStock ? "quantity-stock-error" : undefined} onChange={(event) => setQuantity(Number(event.target.value || 1))} className="h-12 w-16 appearance-none bg-transparent text-center text-sm text-market-ink outline-none focus-visible:ring-2 focus-visible:ring-gold"/>
+        <button type="button" aria-label="Increase quantity" disabled={quantity >= remainingStock || remainingStock === 0} onClick={() => setQuantity((current) => current + 1)} className="min-h-12 min-w-12 text-lg text-market-ink disabled:text-market-border">
+          +
+        </button>
+      </div>
+      {quantity > remainingStock && remainingStock > 0 && (<p id="quantity-stock-error" className="mt-2 text-sm text-error" role="alert">
+          Only {remainingStock} more can be added to your cart.
+        </p>)}
+      {remainingStock > 0 ? (<button type="button" onClick={handleAddToCart} disabled={quantity > remainingStock} className="mt-4 min-h-12 w-full max-w-sm bg-market-ink px-6 text-xs font-medium uppercase tracking-[0.14em] text-market-paper transition-colors hover:bg-market-muted focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-market-ink disabled:cursor-not-allowed disabled:opacity-50">
+          Add to cart
+        </button>) : stock === 0 ? (<div className="mt-4 grid w-full max-w-sm gap-2">
+          <button type="button" disabled className="min-h-12 cursor-not-allowed bg-market-surface px-6 text-xs font-medium uppercase tracking-[0.14em] text-market-muted">
+            Out of stock
+          </button>
+          <button type="button" onClick={() => setIsStockAlertOpen(true)} className="min-h-12 border border-gold bg-market-paper px-6 text-xs font-medium uppercase tracking-[0.14em] text-market-ink transition-colors hover:bg-market-surface focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-gold">
+            Request Mithril stock alert
+          </button>
+        </div>) : <p className="mt-4 text-sm text-market-muted" role="status">All available stock is already in your cart.</p>}
+      {cartMessage && <p className="mt-3 text-sm text-market-muted" role="status">{cartMessage}</p>}
+      {isStockAlertOpen && (<StockAlertModal product={product} onClose={() => setIsStockAlertOpen(false)}/>)}
+    </section>);
+}

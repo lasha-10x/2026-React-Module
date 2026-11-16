@@ -1,0 +1,70 @@
+// JSON from storage has no type, so these check its shape before the app trusts it
+export function isRecord(value) {
+    return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+export function isString(value) {
+    return typeof value === "string";
+}
+export function isNumber(value) {
+    return typeof value === "number" && Number.isFinite(value);
+}
+export function isOptionalString(value) {
+    return value === undefined || isString(value);
+}
+export function isArrayOf(value, isItem) {
+    return Array.isArray(value) && value.every(isItem);
+}
+export function isCartItem(value) {
+    return isRecord(value) && isNumber(value.id) && isString(value.title) && isString(value.thumbnail)
+        && isNumber(value.price) && isNumber(value.discountPercentage) && isNumber(value.stock) && isNumber(value.quantity);
+}
+export function isCartState(value) {
+    return isRecord(value) && isArrayOf(value.items, isCartItem)
+        && (value.promoCode === null || isString(value.promoCode));
+}
+function isCartTotals(value) {
+    return isRecord(value) && isNumber(value.itemCount) && isNumber(value.subtotal)
+        && isNumber(value.discount) && isNumber(value.shipping) && isNumber(value.total);
+}
+function isShippingInfo(value) {
+    return isRecord(value) && isString(value.fullName) && isString(value.email)
+        && isString(value.address) && isString(value.city);
+}
+export function isOrderData(value) {
+    return isRecord(value) && isString(value.id) && isString(value.createdAt)
+        && isArrayOf(value.items, isCartItem)
+        && (value.promoCode === null || isString(value.promoCode))
+        && isCartTotals(value.totals) && isShippingInfo(value.shipping);
+}
+export function isAuthUser(value) {
+    return isRecord(value) && isString(value.username) && isString(value.name) && isString(value.email)
+        && isOptionalString(value.phone);
+}
+export function isStoredUser(value) {
+    return isRecord(value) && isString(value.password) && isAuthUser(value);
+}
+// a Record must list every SortOption, so adding a new option without updating this is a type error
+const SORT_OPTIONS = {
+    "default": true,
+    "price-asc": true,
+    "price-desc": true,
+    "rating-desc": true,
+    "title-asc": true,
+    "discount-desc": true,
+};
+// the URL is user input: ?sort=anything must not reach the API or the select unchecked
+export function isSortOption(value) {
+    return isString(value) && Object.hasOwn(SORT_OPTIONS, value);
+}
+export function isStoredReview(value) {
+    return isRecord(value) && isString(value.id) && isNumber(value.rating) && isString(value.comment)
+        && isString(value.date) && isString(value.reviewerName) && isString(value.reviewerEmail);
+}
+// location.state can hold anything (old links, other pages), so check it before using it
+export function getFromPath(state) {
+    return isRecord(state) && isString(state.from) ? state.from : "/";
+}
+// router state is unknown: the "order placed" banner shows only when the Confirmation page sent justPlaced: true
+export function isJustPlaced(state) {
+    return isRecord(state) && state.justPlaced === true;
+}

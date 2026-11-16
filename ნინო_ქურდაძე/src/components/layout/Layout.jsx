@@ -1,0 +1,51 @@
+import { useEffect } from "react";
+import { Outlet } from "react-router-dom";
+import { Navbar } from "./Navbar";
+import { Footer } from "./Footer";
+import { ScrollToTop } from "./ScrollToTop";
+import { playWoodTap } from "@/utils/sound";
+export const Layout = () => {
+    // Global minimalist wooden knock sound on interactive press (pointerdown for zero latency)
+    useEffect(() => {
+        const handlePointerDown = (e) => {
+            if (e.button !== 0)
+                return;
+            const target = e.target;
+            if (!target)
+                return;
+            const interactive = target.closest('button, a, select, input[type="checkbox"], input[type="radio"], [role="button"]');
+            if (!interactive ||
+                interactive.disabled ||
+                interactive.getAttribute("data-sound-ignore") === "true") {
+                return;
+            }
+            if (interactive.getAttribute("aria-label")?.toLowerCase().includes("light")) {
+                playWoodTap("switch");
+            }
+            else if (interactive.classList.contains("wood-btn-walnut")) {
+                playWoodTap("deep");
+            }
+            else {
+                playWoodTap("soft");
+            }
+        };
+        document.addEventListener("pointerdown", handlePointerDown, { passive: true });
+        return () => document.removeEventListener("pointerdown", handlePointerDown);
+    }, []);
+    return (<div className="relative flex min-h-screen flex-col text-[#26170C] transition-colors duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] dark:text-[#F5EBE0]">
+      {/* Fixed Dual-Layer Wood Background for silky-smooth Light <-> Dark crossfade */}
+      <div aria-hidden="true" className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
+        {/* Light Nordic Oak Layer */}
+        <div className="nordic-wood-layer-light absolute inset-0"/>
+        {/* Dark Smoked Walnut Layer (crossfades via opacity) */}
+        <div className="nordic-wood-layer-dark absolute inset-0 opacity-0 transition-opacity duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] dark:opacity-100"/>
+      </div>
+
+      <ScrollToTop />
+      <Navbar />
+      <main className="relative z-10 flex-1">
+        <Outlet />
+      </main>
+      <Footer />
+    </div>);
+};

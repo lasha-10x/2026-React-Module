@@ -1,0 +1,141 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+    --font-sans: "Figtree", ui-sans-serif, system-ui, sans-serif;
+    --font-display: "Bowlby One", sans-serif;
+    --font-note: "Caveat", cursive;
+    --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+
+    --color-ink: #111111;
+    --color-paper: #FFF8EC;
+    --color-blue: #2F5BFF;
+    --color-orange: #FF7A1A;
+    --color-pink: #FF9BD2;
+    --color-yellow: #FFD23F;
+    --color-mint: #7CE0B5;
+    --color-sky: #9DB4FF;
+    --color-danger: #D7263D;
+    --color-muted: #EDE6D8;
+    --color-muted-ink: #6B655B;
+    --color-card: #FFFFFF;
+    --color-sticker: #FFFFFF;
+    --color-receipt: #FFFFFF;
+    --color-coal: #111111;
+    --color-accent: #2F5BFF;
+    --color-cream: #FFF8EC;
+    --color-on-bright: #111111;
+
+    --radius-card: 28px;
+
+    /* shadow colors come from variables so the dark theme can deepen them */
+    --shadow-card: 0 14px 28px var(--shadow-color, rgba(17, 17, 17, 0.14));
+    --shadow-soft: 0 6px 14px var(--shadow-color, rgba(17, 17, 17, 0.14));
+    --shadow-sticker: 0 8px 18px var(--shadow-color-strong, rgba(17, 17, 17, 0.25));
+
+    --animate-pop: pop 450ms ease-out;
+    --animate-marquee: marquee 40s linear infinite;
+
+    @keyframes marquee {
+        from { translate: 0; }
+        to { translate: -50%; }
+    }
+
+    @keyframes pop {
+        0% { scale: 1; rotate: 0deg; }
+        30% { scale: 1.5; rotate: -12deg; }
+        60% { scale: 0.9; rotate: 6deg; }
+        100% { scale: 1; rotate: 0deg; }
+    }
+}
+
+@layer base {
+    .dark {
+        color-scheme: dark;
+        --color-paper: #3A302B;
+        --color-card: #644A3A;
+        --color-coal: #2C2420;
+        --color-blue: #1F2A4D;
+        --color-orange: #EDE4D6;
+        --color-yellow: #EDE4D6;
+        --color-sticker: #6B5648;
+        --color-receipt: #EDE4D6;
+        /* on dark brown the light theme's faint shadows disappear */
+        --shadow-color: rgba(0, 0, 0, 0.4);
+        --shadow-color-strong: rgba(0, 0, 0, 0.55);
+    }
+
+    .dark,
+    .dark .bg-card {
+        --color-ink: #F3ECE2;
+        --color-accent: #E9C08A;
+        --color-danger: #FFB3BB;
+        --color-muted: #7D6556;
+        --color-muted-ink: #E3D9CC;
+        color: var(--color-ink);
+    }
+
+    /* bright surfaces keep their dark text in both themes */
+    .dark .bg-yellow,
+    .dark .bg-mint,
+    .dark .bg-pink,
+    .dark .bg-sky,
+    .dark .bg-receipt {
+        --color-ink: #111111;
+        --color-accent: #4B3B31;
+        --color-danger: #D7263D;
+        --color-muted: #D3C7B6;
+        --color-muted-ink: #6B655B;
+        color: var(--color-ink);
+    }
+
+    /* the dark theme's orange is a pale cream, so its white labels turn dark */
+    .dark .bg-orange {
+        --color-white: #111111;
+    }
+
+    body {
+        background-color: var(--color-paper);
+        color: var(--color-ink);
+    }
+
+    :focus-visible {
+        outline: 3px solid var(--color-accent);
+        outline-offset: 2px;
+    }
+
+    /* press feedback: shrink buttons and links while held down */
+    button:not(:disabled):active,
+    a:active {
+        scale: 0.94;
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+        button,
+        a {
+            transition-property: scale, translate, rotate, color, background-color, box-shadow;
+            transition-duration: 120ms;
+        }
+    }
+}
+
+/* receipt / ticket edges */
+@utility zigzag-top {
+    height: 12px;
+    background-image: linear-gradient(45deg, var(--zigzag, var(--color-card)) 50%, transparent 50%), linear-gradient(-45deg, var(--zigzag, var(--color-card)) 50%, transparent 50%);
+    background-size: 16px 12px;
+    background-repeat: repeat-x;
+}
+
+@utility zigzag-bottom {
+    height: 12px;
+    background-image: linear-gradient(135deg, var(--zigzag, var(--color-card)) 50%, transparent 50%), linear-gradient(225deg, var(--zigzag, var(--color-card)) 50%, transparent 50%);
+    background-size: 16px 12px;
+    background-repeat: repeat-x;
+}
+
+@utility barcode {
+    height: 46px;
+    background: repeating-linear-gradient(90deg, var(--color-ink) 0 2px, transparent 2px 4px, var(--color-ink) 4px 7px, transparent 7px 8px, var(--color-ink) 8px 9px, transparent 9px 12px);
+}
