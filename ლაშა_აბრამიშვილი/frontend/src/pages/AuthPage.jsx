@@ -1,0 +1,120 @@
+import { useEffect, useRef, useState } from 'react';
+import { Link, Navigate, useNavigate, useSearchParams } from 'react-router';
+import { useAuth } from '../auth/AuthContext';
+import { AuthApiError, validateCredentials } from '../api/auth';
+import { authPath, safeReturnTo } from '../auth/returnTo';
+const inputClass = 'mt-2 min-h-13 w-full rounded-editorial border border-muted bg-paper px-4 py-3 text-base caret-accent hover:border-ink disabled:opacity-60';
+export function AuthPage({ mode }) {
+    const { user, login, register } = useAuth();
+    const navigate = useNavigate();
+    const [search] = useSearchParams();
+    const returnTo = safeReturnTo(search.get('returnTo'));
+    const [credentials, setCredentials] = useState({ email: '', password: '' });
+    const [confirmation, setConfirmation] = useState('');
+    const [visible, setVisible] = useState(false);
+    const [errors, setErrors] = useState({});
+    const [failure, setFailure] = useState('');
+    const [success, setSuccess] = useState('');
+    const [pending, setPending] = useState(false);
+    const request = useRef(null);
+    const emailInput = useRef(null);
+    const passwordInput = useRef(null);
+    const confirmationInput = useRef(null);
+    const failureBox = useRef(null);
+    const isLogin = mode === 'login';
+    useEffect(() => () => request.current?.abort(), []);
+    useEffect(() => { if (failure)
+        failureBox.current?.focus(); }, [failure]);
+    async function submit(event) {
+        event.preventDefault();
+        if (request.current)
+            return;
+        const validation = {
+            ...validateCredentials(credentials, mode),
+            confirmation: isLogin ? undefined : !confirmation ? 'Confirm your password.' : confirmation !== credentials.password ? 'Passwords must match.' : undefined,
+        };
+        setErrors(validation);
+        setFailure('');
+        if (validation.email || validation.password || validation.confirmation) {
+            (validation.email ? emailInput : validation.password ? passwordInput : confirmationInput).current?.focus();
+            return;
+        }
+        const controller = new AbortController();
+        request.current = controller;
+        setPending(true);
+        try {
+            if (isLogin) {
+                await login(credentials, controller.signal);
+                if (!controller.signal.aborted)
+                    navigate(returnTo, { replace: true });
+            }
+            else {
+                const message = await register(credentials, controller.signal);
+                if (!controller.signal.aborted)
+                    setSuccess(message);
+            }
+            if (!controller.signal.aborted) {
+                setCredentials({ email: '', password: '' });
+                setConfirmation('');
+            }
+        }
+        catch (error) {
+            if (!controller.signal.aborted)
+                setFailure(error instanceof AuthApiError ? error.message : 'We couldn’t complete your request. Please try again.');
+        }
+        finally {
+            if (!controller.signal.aborted)
+                setPending(false);
+            if (request.current === controller)
+                request.current = null;
+        }
+    }
+    if (user)
+        return <Navigate to={returnTo} replace/>;
+    return (<section className="page-width grid gap-12 py-12 sm:py-16 lg:min-h-160 lg:grid-cols-[1fr_26rem] lg:gap-24 lg:py-24 xl:grid-cols-[1fr_30rem]">
+      <div className="max-w-xl lg:pt-4">
+        <h1 className="font-display text-[clamp(2.75rem,5vw,4.5rem)] leading-[1.05] tracking-[-0.02em]">{isLogin ? 'A familiar place.' : 'Make yourself at home.'}</h1>
+        <p className="mt-6 max-w-md text-base leading-7 text-muted">{isLogin ? 'Welcome back to 10X Shop. Sign in to view your account, then take another look around.' : 'Create a 10X Shop account. A few simple details, and you can return to the collection.'}</p>
+        <p className="mt-8 max-w-sm border-t border-line pt-5 text-sm leading-6 text-muted">Your sign-in lasts up to 15 minutes, including if you refresh the page. Your shopping bag is saved separately.</p>
+        <Link to="/products" className="text-link mt-6 inline-flex items-center text-sm">Back to the collection</Link>
+      </div>
+      <div className="min-w-0 border-t border-line pt-8 lg:border-t-0 lg:pt-0">
+        {success ? <div role="status" className="bg-surface p-6 sm:p-8">
+          <h2 className="font-display text-3xl">Request received.</h2>
+          <p className="mt-5 text-sm leading-7 text-muted">{success}</p>
+          <Link to={authPath('login', returnTo)} className="primary-link mt-7">Continue to login</Link>
+        </div> : <>
+          <h2 className="font-display text-3xl">{isLogin ? 'Login' : 'Create account'}</h2>
+          <p className="mt-3 text-sm leading-6 text-muted">{isLogin ? 'Don’t have an account? ' : 'Already have an account? '}<Link className="nav-link touch-target underline" to={authPath(isLogin ? 'register' : 'login', returnTo)}>{isLogin ? 'Create account' : 'Log in'}</Link></p>
+          <form noValidate onSubmit={submit} aria-busy={pending} className="mt-8">
+            <fieldset disabled={pending} className="space-y-6">
+              <legend className="sr-only">{isLogin ? 'Login credentials' : 'Registration details'}</legend>
+              <div>
+                <label htmlFor="auth-email" className="text-sm font-medium">Email address</label>
+                <input ref={emailInput} id="auth-email" name="email" type="email" autoComplete="email" inputMode="email" required maxLength={254} value={credentials.email} onChange={(event) => setCredentials({ ...credentials, email: event.target.value })} aria-invalid={Boolean(errors.email)} aria-describedby={errors.email ? 'email-error' : undefined} className={inputClass}/>
+                {errors.email && <p id="email-error" className="mt-2 text-sm leading-6 text-ink">{errors.email}</p>}
+              </div>
+              <div>
+                <label htmlFor="auth-password" className="text-sm font-medium">Password</label>
+                <input ref={passwordInput} id="auth-password" name="password" type={visible ? 'text' : 'password'} autoComplete={isLogin ? 'current-password' : 'new-password'} required value={credentials.password} onChange={(event) => setCredentials({ ...credentials, password: event.target.value })} aria-invalid={Boolean(errors.password)} aria-describedby="password-help password-error" className={inputClass}/>
+                <button type="button" aria-controls={isLogin ? 'auth-password' : 'auth-password auth-confirmation'} onClick={() => setVisible(!visible)} className="text-link touch-target text-sm">{visible ? 'Hide password' : 'Show password'}</button>
+                <p id="password-help" className="mt-3 text-xs leading-5 text-muted">{isLogin ? 'Enter your password exactly as you set it.' : 'Use 12–128 characters. Spaces are not allowed.'}</p>
+                <p id="password-error" className="mt-2 text-sm leading-6 text-ink">{errors.password}</p>
+              </div>
+              {!isLogin && <div>
+                <label htmlFor="auth-confirmation" className="text-sm font-medium">Confirm password</label>
+                <input ref={confirmationInput} id="auth-confirmation" type={visible ? 'text' : 'password'} autoComplete="new-password" required value={confirmation} onChange={(event) => {
+                    setConfirmation(event.target.value);
+                    setErrors({ ...errors, confirmation: undefined });
+                }} aria-invalid={Boolean(errors.confirmation)} aria-describedby={errors.confirmation ? 'confirmation-error' : undefined} className={inputClass}/>
+                {errors.confirmation && <p id="confirmation-error" role="alert" className="mt-2 text-sm text-accent">{errors.confirmation}</p>}
+              </div>}
+              <button type="submit" disabled={pending} className="primary-link min-h-13 w-full disabled:cursor-wait disabled:opacity-60">{pending ? isLogin ? 'Signing in…' : 'Sending request…' : isLogin ? 'Login' : 'Create account'}<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M4 12h15m-6-6 6 6-6 6"/></svg></button>
+            </fieldset>
+            {failure && <p ref={failureBox} role="alert" tabIndex={-1} className="mt-6 border border-line bg-surface p-4 text-sm leading-6">{failure}</p>}
+            <p role="status" className="sr-only">{pending ? isLogin ? 'Checking your sign-in details.' : 'Submitting registration request.' : ''}</p>
+          </form>
+        </>}
+      </div>
+    </section>);
+}
